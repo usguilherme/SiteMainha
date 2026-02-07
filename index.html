@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cassia Nunes Hair | Sistema PRO</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="loader-overlay" class="loader-overlay">
+        <div class="loader-content">
+            <div class="loader-circle"></div>
+            <h2>CN SYSTEM</h2>
+            <p>Carregando ambiente...</p>
+        </div>
+    </div>
+
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div id="login-overlay" class="login-overlay" style="display:none"> <div class="glass-card login-card">
+            <div class="login-header">
+                <div class="logo-circle">CN</div>
+                <h1>Acesso Restrito</h1>
+                <p>Cassia Nunes Hair OS</p>
+            </div>
+            <div class="input-wrapper">
+                <i data-lucide="lock" class="input-icon"></i>
+                <input type="password" id="input-senha" placeholder="Senha Mestra..." onkeyup="if(event.key==='Enter') verificarSenha()">
+            </div>
+            <button onclick="verificarSenha()" class="btn-glow">INICIAR SESSÃO</button>
+            <p id="erro-senha" class="error-msg">Credencial Inválida</p>
+        </div>
+    </div>
+
+    <div class="app-layout">
+        <aside class="sidebar glass-panel">
+            <div class="sidebar-header">
+                <div class="brand">
+                    <span>CN</span> HAIR
+                </div>
+                <div class="status-dot online"></div>
+            </div>
+            
+            <nav class="nav-menu">
+                <p class="nav-title">PRINCIPAL</p>
+                <a onclick="abrirAba('dashboard')" class="nav-item active">
+                    <i data-lucide="layout-grid"></i> Dashboard
+                </a>
+                <a onclick="abrirAba('novo_atendimento')" class="nav-item">
+                    <i data-lucide="sparkles"></i> Caixa / Venda
+                </a>
+                <a onclick="abrirAba('agenda')" class="nav-item">
+                    <i data-lucide="calendar-clock"></i> Agenda Hoje
+                </a>
+                
+                <p class="nav-title">GESTÃO</p>
+                <a onclick="abrirAba('clientes')" class="nav-item">
+                    <i data-lucide="users"></i> Clientes VIP
+                </a>
+                <a onclick="abrirAba('financeiro')" class="nav-item">
+                    <i data-lucide="wallet"></i> Financeiro
+                </a>
+                <a onclick="abrirAba('servicos')" class="nav-item">
+                    <i data-lucide="scissors"></i> Serviços
+                </a>
+                <a onclick="abrirAba('despesas')" class="nav-item">
+                    <i data-lucide="receipt"></i> Despesas
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button onclick="logout()" class="btn-logout">
+                    <i data-lucide="log-out"></i> Sair
+                </button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-header glass-panel">
+                <div>
+                    <h2 id="titulo-pagina">Visão Geral</h2>
+                    <div id="data-hoje" class="date-badge">...</div>
+                </div>
+                <div class="user-profile">
+                    <div class="notification-btn"><i data-lucide="bell"></i><span class="dot"></span></div>
+                    <div class="avatar">CN</div>
+                </div>
+            </header>
+
+            <div class="content-scroll">
+                
+                <section id="dashboard" class="aba ativa fade-in">
+                    <div class="kpi-grid">
+                        <div class="kpi-card glass-panel gradient-1">
+                            <div class="icon-box"><i data-lucide="dollar-sign"></i></div>
+                            <div>
+                                <span>Faturamento Hoje</span>
+                                <h3 id="dash-faturamento">R$ 0,00</h3>
+                            </div>
+                        </div>
+                        <div class="kpi-card glass-panel">
+                            <div class="icon-box"><i data-lucide="user-check"></i></div>
+                            <div>
+                                <span>Atendimentos</span>
+                                <h3 id="dash-atendimentos">0</h3>
+                            </div>
+                        </div>
+                        <div class="kpi-card glass-panel">
+                            <div class="icon-box warning"><i data-lucide="repeat"></i></div>
+                            <div>
+                                <span>Retornos Pendentes</span>
+                                <h3 id="dash-retornos">0</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="charts-grid">
+                        <div class="chart-box glass-panel">
+                            <h4>🔥 Top 5 Serviços</h4>
+                            <div class="canvas-wrapper"><canvas id="chartTopServicos"></canvas></div>
+                        </div>
+                        <div class="chart-box glass-panel">
+                            <h4>📈 Fluxo Financeiro (Semanal)</h4>
+                            <div class="canvas-wrapper"><canvas id="chartSemanal"></canvas></div>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel mt-20">
+                        <h3><i data-lucide="alert-circle" style="width:16px; display:inline"></i> Atenção: Retornos para Hoje/Atrasados</h3>
+                        <div id="lista-retornos-dashboard" class="simple-list"></div>
+                    </div>
+                </section>
+
+                <section id="novo_atendimento" class="aba fade-in" style="display:none">
+                    <div class="pdv-layout">
+                        <div class="pdv-left glass-panel">
+                            <div class="step-box">
+                                <span class="step-num">1</span>
+                                <h3>Cliente</h3>
+                                <div class="form-group">
+                                    <select id="pdv-cliente" class="modern-input"></select>
+                                    <button onclick="abrirAba('clientes')" class="btn-icon" title="Novo Cliente"><i data-lucide="plus"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="step-box">
+                                <span class="step-num">2</span>
+                                <h3>Serviços</h3>
+                                <div class="form-group">
+                                    <select id="pdv-servico" class="modern-input"></select>
+                                    <button onclick="adicionarAoCarrinho()" class="btn-primary">Adicionar</button>
+                                </div>
+                            </div>
+
+                            <div class="divider"></div>
+
+                            <h3>Detalhes do Pós-Venda</h3>
+                            <div class="grid-2">
+                                <div>
+                                    <label>Agendar Retorno</label>
+                                    <input type="date" id="pdv-retorno" class="modern-input">
+                                </div>
+                                <div>
+                                    <label>Obs. Técnicas</label>
+                                    <input type="text" id="pdv-obs" class="modern-input" placeholder="Ex: Usado tinta 7.1...">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pdv-right glass-panel">
+                            <div class="ticket-header">
+                                <h3>Cupom Atual</h3>
+                                <span class="badge">Em aberto</span>
+                            </div>
+                            <ul id="lista-carrinho" class="carrinho-list">
+                                <li class="empty-state">Carrinho vazio...</li>
+                            </ul>
+                            
+                            <div class="checkout-area">
+                                <div class="total-display">
+                                    <span>Subtotal</span>
+                                    <h2 id="pdv-total">R$ 0,00</h2>
+                                </div>
+                                <select id="pdv-pagamento" class="modern-input mb-10">
+                                    <option value="Dinheiro">💵 Dinheiro</option>
+                                    <option value="Pix">💠 Pix</option>
+                                    <option value="Cartão Crédito">💳 Cartão Crédito</option>
+                                    <option value="Cartão Débito">💳 Cartão Débito</option>
+                                </select>
+                                <button onclick="finalizarVenda()" class="btn-checkout">CONFIRMAR E IMPRIMIR</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="clientes" class="aba fade-in" style="display:none">
+                    <div class="glass-panel">
+                        <div class="table-header">
+                            <div class="search-box">
+                                <i data-lucide="search"></i>
+                                <input type="text" id="busca-cliente" placeholder="Buscar por nome..." onkeyup="filtrarClientes()" class="search-input">
+                            </div>
+                            <button onclick="abrirModalCliente()" class="btn-primary">Novo Cliente</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="modern-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nome / Contato</th>
+                                        <th>Status</th>
+                                        <th>Última Visita</th>
+                                        <th>Próximo Retorno</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-clientes"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="financeiro" class="aba fade-in" style="display:none">
+                    <div class="finance-cards">
+                        <div class="fin-card income">
+                            <span>Entradas (Mês)</span>
+                            <h2 id="fin-entradas">R$ 0,00</h2>
+                        </div>
+                        <div class="fin-card expense">
+                            <span>Saídas (Mês)</span>
+                            <h2 id="fin-saidas">R$ 0,00</h2>
+                        </div>
+                        <div class="fin-card profit">
+                            <span>Lucro Líquido</span>
+                            <h2 id="fin-lucro">R$ 0,00</h2>
+                        </div>
+                    </div>
+                    <div class="glass-panel mt-20">
+                        <h3>Extrato de Lançamentos</h3>
+                        <div class="table-responsive">
+                            <table class="modern-table">
+                                <thead>
+                                    <tr><th>Data</th><th>Descrição</th><th>Tipo</th><th>Valor</th></tr>
+                                </thead>
+                                <tbody id="tabela-financeiro"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="agenda" class="aba fade-in" style="display:none">
+                    <div class="glass-panel">
+                         <h3 id="agenda-data-display" class="mb-10 text-gradient"></h3>
+                         <p class="text-muted">Atendimentos realizados na data de hoje:</p>
+                         <div id="lista-agenda" class="grid-agenda mt-20"></div>
+                    </div>
+                </section>
+
+                <section id="servicos" class="aba fade-in" style="display:none">
+                    <div class="glass-panel form-inline">
+                        <input type="text" id="serv-nome" placeholder="Nome do Serviço" class="modern-input">
+                        <input type="number" id="serv-preco" placeholder="Valor (R$)" class="modern-input">
+                        <button onclick="salvarServicoCad()" class="btn-primary">Salvar</button>
+                    </div>
+                    <div id="lista-servicos-cad" class="grid-cards mt-20"></div>
+                </section>
+
+                <section id="despesas" class="aba fade-in" style="display:none">
+                    <div class="glass-panel">
+                        <h3>Registrar Saída</h3>
+                        <div class="grid-2">
+                            <input type="text" id="desp-desc" placeholder="Descrição (ex: Luz, Água, Produto)" class="modern-input">
+                            <input type="number" id="desp-valor" placeholder="Valor (R$)" class="modern-input">
+                            <input type="date" id="desp-data" class="modern-input">
+                            <select id="desp-cat" class="modern-input">
+                                <option value="Fixa">Custo Fixo (Aluguel/Contas)</option>
+                                <option value="Produto">Reposição de Estoque</option>
+                                <option value="Pessoal">Retirada Pessoal</option>
+                            </select>
+                        </div>
+                        <button onclick="lancarDespesa()" class="btn-danger mt-10 full-width">LANÇAR DESPESA</button>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <div id="modal-anamnese" class="modal-backdrop" style="display:none">
+        <div class="glass-card modal-window">
+            <div class="modal-header">
+                <h3>Ficha Técnica & Histórico</h3>
+                <button onclick="fecharModal('modal-anamnese')" class="close-btn">×</button>
+            </div>
+            <div class="modal-body">
+                <h2 id="anamnese-cliente-nome" class="text-gradient">Cliente</h2>
+                <div id="historico-lista" class="historico-box"></div>
+                <div class="new-entry">
+                    <label>Adicionar Novo Registro</label>
+                    <input type="text" id="anam-titulo" placeholder="Procedimento Realizado" class="modern-input">
+                    <textarea id="anam-obs" placeholder="Detalhes técnicos (Mistura, tempo, ox...)" class="modern-input"></textarea>
+                    <button onclick="salvarAnamnese()" class="btn-glow full-width mt-10">SALVAR NO PRONTUÁRIO</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+    <div id="cupom-print"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
