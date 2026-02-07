@@ -27,7 +27,7 @@ let store = {
     carrinho: []
 };
 
-// Variáveis de Controle e Edição
+// Variáveis de Controle
 let chartTop = null;
 let chartSemana = null;
 let idDespesaEdicao = null;
@@ -41,6 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
     lucide.createIcons();
     const loader = document.getElementById("loader-overlay");
     
+    // Verifica login
     const usuarioLogado = localStorage.getItem("cn_user");
     
     setTimeout(() => {
@@ -56,6 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }, 1500);
 
+    // Data no Header
     const options = { weekday: 'long', day: 'numeric', month: 'long' };
     const dateEl = document.getElementById("data-hoje");
     if(dateEl) dateEl.innerText = new Date().toLocaleDateString('pt-BR', options);
@@ -86,6 +88,7 @@ function logout() {
 function inicializarSistema() {
     console.log("Sistema Cassia Nunes Iniciado");
     
+    // Listeners do Firebase (Realtime)
     db.ref('servicos').on('value', snap => {
         store.servicos = snap.val() ? Object.values(snap.val()) : [];
         renderServicosPDV();
@@ -224,6 +227,7 @@ function renderCarrinho() {
     lucide.createIcons();
     document.getElementById("pdv-total").innerText = `R$ ${total.toFixed(2)}`;
 
+    // Atualiza troco se estiver na tela
     if(document.getElementById("pdv-pagamento").value === "Dinheiro") {
         calcularTroco();
     }
@@ -234,6 +238,7 @@ function removerDoCarrinho(index) {
     renderCarrinho();
 }
 
+// -- LÓGICA DE DATA DE RETORNO INTELIGENTE --
 function calcularDataRetorno() {
     const diasInput = document.getElementById("pdv-dias-retorno");
     const inputData = document.getElementById("pdv-retorno");
@@ -241,6 +246,7 @@ function calcularDataRetorno() {
     if(!diasInput || !inputData) return;
 
     const dias = parseInt(diasInput.value);
+    
     if(!isNaN(dias) && dias > 0) {
         const dataFutura = new Date();
         dataFutura.setDate(dataFutura.getDate() + dias);
@@ -250,9 +256,11 @@ function calcularDataRetorno() {
     }
 }
 
+// -- LÓGICA DE TROCO --
 function toggleTroco() {
     const tipo = document.getElementById("pdv-pagamento").value;
     const area = document.getElementById("area-troco");
+    
     if(!area) return;
 
     if(tipo === "Dinheiro") {
@@ -340,7 +348,7 @@ function finalizarVenda() {
     // Reseta select de cliente
     document.getElementById("pdv-cliente").value = "";
     
-    toggleTroco();
+    toggleTroco(); // Esconde/Reseta área de troco
     renderCarrinho();
 }
 
@@ -498,7 +506,7 @@ function abrirModalCliente() {
 }
 
 // ==========================================
-// 7. DESPESAS
+// 7. DESPESAS (COM EDIÇÃO)
 // ==========================================
 function lancarDespesa() {
     const desc = document.getElementById("desp-desc").value;
@@ -509,16 +517,28 @@ function lancarDespesa() {
     if(!desc || isNaN(valor) || !data) return alert("Preencha tudo!");
 
     if (idDespesaEdicao) {
+        // MODO EDIÇÃO
         db.ref(`despesas/${idDespesaEdicao}`).update({ 
-            descricao: desc, valor: valor, data: data, categoria: cat 
+            descricao: desc, 
+            valor: valor, 
+            data: data, 
+            categoria: cat 
         }).then(() => dispararToast("Despesa atualizada!"));
+        
         cancelarEdicaoDespesa();
     } else {
+        // MODO CRIAÇÃO
         const id = Date.now();
         db.ref(`despesas/${id}`).set({ 
-            id, descricao: desc, valor: valor, data: data, categoria: cat, tipo: 'saida' 
+            id, 
+            descricao: desc, 
+            valor: valor, 
+            data: data, 
+            categoria: cat, 
+            tipo: 'saida' 
         }).then(() => dispararToast("Despesa salva!"));
         
+        // Limpar campos
         document.getElementById("desp-desc").value = "";
         document.getElementById("desp-valor").value = "";
     }
@@ -528,6 +548,7 @@ function renderListaGestaoDespesas() {
     const tbody = document.getElementById("lista-gestao-despesas");
     if(!tbody) return;
     
+    // Ordenar por data decrescente
     const lista = [...store.despesas].sort((a,b) => new Date(b.data) - new Date(a.data));
     
     tbody.innerHTML = lista.map(d => `
@@ -554,6 +575,7 @@ function prepararEdicaoDespesa(id) {
     
     idDespesaEdicao = id;
     
+    // Ajustar UI
     const titulo = document.getElementById("titulo-form-despesa");
     if(titulo) titulo.innerText = "Editar Despesa";
     
@@ -563,6 +585,7 @@ function prepararEdicaoDespesa(id) {
     const btnCancelar = document.getElementById("btn-cancelar-despesa");
     if(btnCancelar) btnCancelar.style.display = "inline-block";
     
+    // Scroll para o topo
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -592,14 +615,19 @@ function salvarServicoCad() {
     if(!nome || !preco) return dispararToast("Preencha nome e preço!", "error");
 
     if (idServicoEdicao) {
+        // MODO EDIÇÃO
         db.ref(`servicos/${idServicoEdicao}`).update({ 
-            nome: nome, preco: preco 
+            nome: nome, 
+            preco: preco 
         }).then(() => dispararToast("Serviço atualizado!"));
+        
         cancelarEdicaoServico();
     } else {
+        // MODO CRIAÇÃO
         const id = Date.now();
         db.ref(`servicos/${id}`).set({ id, nome, preco });
         dispararToast("Serviço salvo!");
+        
         document.getElementById("serv-nome").value = "";
         document.getElementById("serv-preco").value = "";
     }
@@ -624,6 +652,7 @@ function renderListaServicosCad() {
             </div>
         </div>
     `).join("");
+    
     lucide.createIcons();
 }
 
@@ -631,32 +660,38 @@ function prepararEdicaoServico(id) {
     const s = store.servicos.find(x => x.id === id);
     if(!s) return;
 
+    // Preenche os campos com os dados do serviço
     document.getElementById("serv-nome").value = s.nome;
     document.getElementById("serv-preco").value = s.preco;
     
+    // Muda o estado para edição
     idServicoEdicao = id;
     
+    // Muda a aparência dos botões
     const btnSalvar = document.getElementById("btn-salvar-servico");
     if(btnSalvar) {
         btnSalvar.innerText = "ATUALIZAR";
-        btnSalvar.style.background = "var(--warning)";
+        btnSalvar.style.background = "var(--warning)"; // Fica amarelo/laranja
     }
     
     const btnCancelar = document.getElementById("btn-cancelar-servico");
     if(btnCancelar) btnCancelar.style.display = "block";
     
+    // Rola a tela para cima (útil no celular)
     document.getElementById("servicos").scrollIntoView({ behavior: 'smooth' });
 }
 
 function cancelarEdicaoServico() {
     idServicoEdicao = null;
+    
     document.getElementById("serv-nome").value = "";
     document.getElementById("serv-preco").value = "";
     
+    // Reseta os botões ao normal
     const btnSalvar = document.getElementById("btn-salvar-servico");
     if(btnSalvar) {
         btnSalvar.innerText = "Salvar";
-        btnSalvar.style.background = "";
+        btnSalvar.style.background = ""; // Volta a cor original
     }
     
     const btnCancelar = document.getElementById("btn-cancelar-servico");
@@ -666,6 +701,8 @@ function cancelarEdicaoServico() {
 // ==========================================
 // 9. FUNÇÕES AUXILIARES, GRÁFICOS E MODAIS
 // ==========================================
+let clienteAnamneseAtual = null;
+
 function abrirModalAnamnese(id) {
     clienteAnamneseAtual = store.clientes.find(c => c.id == id);
     if(!clienteAnamneseAtual) return;
@@ -723,6 +760,7 @@ function atualizarKPIs() {
     document.getElementById("dash-atendimentos").innerText = atendimentosHoje.length;
     document.getElementById("dash-retornos").innerText = retornosPendentes;
 
+    // Mensal
     const mesAtual = new Date().getMonth();
     const entMes = store.atendimentos.filter(a => new Date(a.data).getMonth() === mesAtual).reduce((acc, a) => acc + a.total, 0);
     const saiMes = store.despesas.filter(d => new Date(d.data).getMonth() === mesAtual).reduce((acc, d) => acc + d.valor, 0);
@@ -749,6 +787,7 @@ function renderTabelaFinanceiro() {
 }
 
 function atualizarGraficos() {
+    // 1. Top Serviços
     const contagem = {};
     store.atendimentos.forEach(a => a.servicos.forEach(s => contagem[s.nome] = (contagem[s.nome] || 0) + 1));
     const sorted = Object.entries(contagem).sort((a,b) => b[1] - a[1]).slice(0,5);
@@ -774,6 +813,7 @@ function atualizarGraficos() {
         }
     });
 
+    // 2. Fluxo Semanal
     const ultimos = store.atendimentos.slice(0, 10).reverse(); 
     const ctxWeek = document.getElementById("chartSemanal");
     if(chartSemana) chartSemana.destroy();
