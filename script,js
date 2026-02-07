@@ -1,7 +1,6 @@
 // ==========================================
 // 1. CONFIGURAÇÃO FIREBASE & ESTADO GLOBAL
 // ==========================================
-// *** ATENÇÃO: SUBSTITUA PELAS SUAS CHAVES DO FIREBASE ***
 const firebaseConfig = {
     apiKey: "AIzaSyCc5WfEY8BVaD0JN_Jqo2MB7Ib_qJT8JT4",
     authDomain: "nayarasite-cbb98.firebaseapp.com",
@@ -28,9 +27,12 @@ let store = {
     carrinho: []
 };
 
-// Variáveis de Gráficos
+// Variáveis de Controle e Edição
 let chartTop = null;
 let chartSemana = null;
+let idDespesaEdicao = null;
+let idServicoEdicao = null;
+let idAtendimentoEdicao = null; 
 
 // ==========================================
 // 2. INICIALIZAÇÃO E AUTENTICAÇÃO
@@ -39,23 +41,24 @@ document.addEventListener("DOMContentLoaded", () => {
     lucide.createIcons();
     const loader = document.getElementById("loader-overlay");
     
-    // Verifica login
     const usuarioLogado = localStorage.getItem("cn_user");
     
     setTimeout(() => {
-        loader.style.opacity = '0';
-        setTimeout(() => loader.style.display = 'none', 500);
+        if(loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => loader.style.display = 'none', 500);
+        }
 
         if(usuarioLogado) {
             inicializarSistema();
         } else {
             document.getElementById("login-overlay").style.display = 'flex';
         }
-    }, 1500); // Simula carregamento premium
+    }, 1500);
 
-    // Data no Header
     const options = { weekday: 'long', day: 'numeric', month: 'long' };
-    document.getElementById("data-hoje").innerText = new Date().toLocaleDateString('pt-BR', options);
+    const dateEl = document.getElementById("data-hoje");
+    if(dateEl) dateEl.innerText = new Date().toLocaleDateString('pt-BR', options);
 });
 
 function verificarSenha() {
@@ -81,9 +84,8 @@ function logout() {
 }
 
 function inicializarSistema() {
-    console.log("🚀 Sistema Cassia Nunes Hair OS Iniciado");
+    console.log("Sistema Cassia Nunes Iniciado");
     
-    // Listeners do Firebase (Realtime)
     db.ref('servicos').on('value', snap => {
         store.servicos = snap.val() ? Object.values(snap.val()) : [];
         renderServicosPDV();
@@ -95,7 +97,7 @@ function inicializarSistema() {
         renderClientesPDV();
         renderTabelaClientes();
         atualizarKPIs();
-        renderRetornosDashboard();
+        filtrarRetornosDashboard();
     });
 
     db.ref('atendimentos').on('value', snap => {
@@ -109,6 +111,7 @@ function inicializarSistema() {
     db.ref('despesas').on('value', snap => {
         store.despesas = snap.val() ? Object.values(snap.val()) : [];
         renderTabelaFinanceiro();
+        renderListaGestaoDespesas();
         atualizarKPIs();
     });
 }
@@ -139,14 +142,16 @@ function abrirAba(idAba) {
         'financeiro': 'Fluxo de Caixa',
         'agenda': 'Agenda Diária',
         'servicos': 'Catálogo',
-        'despesas': 'Controle de Custos'
+        'despesas': 'Gestão de Despesas'
     };
-    document.getElementById('titulo-pagina').innerText = titulos[idAba] || 'Cassia Nunes Hair';
+    const tituloEl = document.getElementById('titulo-pagina');
+    if(tituloEl) tituloEl.innerText = titulos[idAba] || 'Cassia Nunes';
     lucide.createIcons();
 }
 
 function dispararToast(msg, tipo = 'success') {
     const container = document.getElementById('toast-container');
+    if(!container) return;
     const el = document.createElement('div');
     el.className = 'glass-panel';
     el.style.padding = '15px 20px';
@@ -169,12 +174,14 @@ function dispararToast(msg, tipo = 'success') {
 // ==========================================
 function renderServicosPDV() {
     const sel = document.getElementById("pdv-servico");
+    if(!sel) return;
     sel.innerHTML = '<option value="">Selecione um serviço...</option>' + 
         store.servicos.map(s => `<option value="${s.id}" data-preco="${s.preco}">${s.nome} - R$ ${parseFloat(s.preco).toFixed(2)}</option>`).join("");
 }
 
 function renderClientesPDV() {
     const sel = document.getElementById("pdv-cliente");
+    if(!sel) return;
     sel.innerHTML = '<option value="">Cliente Avulso / Sem Cadastro</option>' + 
         store.clientes.map(c => `<option value="${c.id}">${c.nome}</option>`).join("");
 }
@@ -185,7 +192,8 @@ function adicionarAoCarrinho() {
     if(!id) return dispararToast("Selecione um serviço!", "error");
 
     const servico = store.servicos.find(s => s.id == id);
-    store.carrinho.push(servico);
+    // Clonar para evitar referência
+    store.carrinho.push({ ...servico });
     renderCarrinho();
 }
 
@@ -196,6 +204,9 @@ function renderCarrinho() {
     if(store.carrinho.length === 0) {
         lista.innerHTML = '<li class="empty-state">Carrinho vazio...</li>';
         document.getElementById("pdv-total").innerText = "R$ 0,00";
+        if(document.getElementById("pdv-troco-display")) {
+             document.getElementById("pdv-troco-display").innerText = "R$ 0,00";
+        }
         return;
     }
 
@@ -212,11 +223,60 @@ function renderCarrinho() {
     
     lucide.createIcons();
     document.getElementById("pdv-total").innerText = `R$ ${total.toFixed(2)}`;
+
+    if(document.getElementById("pdv-pagamento").value === "Dinheiro") {
+        calcularTroco();
+    }
 }
 
 function removerDoCarrinho(index) {
     store.carrinho.splice(index, 1);
     renderCarrinho();
+}
+
+function calcularDataRetorno() {
+    const diasInput = document.getElementById("pdv-dias-retorno");
+    const inputData = document.getElementById("pdv-retorno");
+    
+    if(!diasInput || !inputData) return;
+
+    const dias = parseInt(diasInput.value);
+    if(!isNaN(dias) && dias > 0) {
+        const dataFutura = new Date();
+        dataFutura.setDate(dataFutura.getDate() + dias);
+        inputData.value = dataFutura.toISOString().split('T')[0];
+    } else {
+        inputData.value = "";
+    }
+}
+
+function toggleTroco() {
+    const tipo = document.getElementById("pdv-pagamento").value;
+    const area = document.getElementById("area-troco");
+    if(!area) return;
+
+    if(tipo === "Dinheiro") {
+        area.style.display = "block";
+    } else {
+        area.style.display = "none";
+        document.getElementById("pdv-valor-pago").value = "";
+        document.getElementById("pdv-troco-display").innerText = "R$ 0,00";
+    }
+}
+
+function calcularTroco() {
+    const total = store.carrinho.reduce((acc, i) => acc + parseFloat(i.preco), 0);
+    const pago = parseFloat(document.getElementById("pdv-valor-pago").value) || 0;
+    const troco = pago - total;
+    const display = document.getElementById("pdv-troco-display");
+    
+    if(troco >= 0) {
+        display.innerText = `R$ ${troco.toFixed(2)}`;
+        display.style.color = "var(--success)";
+    } else {
+        display.innerText = "Faltam R$ " + Math.abs(troco).toFixed(2);
+        display.style.color = "var(--danger)";
+    }
 }
 
 function finalizarVenda() {
@@ -234,8 +294,11 @@ function finalizarVenda() {
         if(c) nomeCliente = c.nome;
     }
 
+    // Se estiver editando, usa o ID existente, senão cria novo
+    const id = idAtendimentoEdicao || Date.now();
+
     const atendimento = {
-        id: Date.now(),
+        id: id,
         data: new Date().toISOString().split('T')[0],
         hora: new Date().toLocaleTimeString('pt-BR').substr(0,5),
         timestamp: Date.now(),
@@ -248,7 +311,16 @@ function finalizarVenda() {
         previsaoRetorno: retorno || null
     };
 
-    db.ref(`atendimentos/${atendimento.id}`).set(atendimento);
+    if (idAtendimentoEdicao) {
+        // Atualiza existente
+        db.ref(`atendimentos/${id}`).update(atendimento);
+        dispararToast("Atendimento atualizado!");
+        idAtendimentoEdicao = null; // Reseta modo edição
+    } else {
+        // Cria novo
+        db.ref(`atendimentos/${id}`).set(atendimento);
+        dispararToast("✅ Venda Finalizada!");
+    }
 
     if(idCliente) {
         let updates = { ultimaVisita: atendimento.data };
@@ -256,21 +328,98 @@ function finalizarVenda() {
         db.ref(`clientes/${idCliente}`).update(updates);
     }
 
+    // Resetar campos
     store.carrinho = [];
     document.getElementById("pdv-obs").value = "";
     document.getElementById("pdv-retorno").value = "";
+    const diasInput = document.getElementById("pdv-dias-retorno");
+    if(diasInput) diasInput.value = "";
+    const valorPagoInput = document.getElementById("pdv-valor-pago");
+    if(valorPagoInput) valorPagoInput.value = "";
+    
+    // Reseta select de cliente
+    document.getElementById("pdv-cliente").value = "";
+    
+    toggleTroco();
     renderCarrinho();
-    dispararToast("✅ Venda Finalizada!");
 }
 
 // ==========================================
-// 5. MÓDULO: CLIENTES & WHATSAPP
+// 5. MÓDULO: AGENDA & EDIÇÃO DE VENDAS
+// ==========================================
+function renderAgenda() {
+    const div = document.getElementById("lista-agenda");
+    const hoje = new Date().toISOString().split('T')[0];
+    const agendaHoje = store.atendimentos.filter(a => a.data === hoje).sort((a,b) => b.timestamp - a.timestamp);
+
+    const dateDisplay = document.getElementById("agenda-data-display");
+    if(dateDisplay) dateDisplay.innerText = new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'numeric'});
+
+    if(agendaHoje.length === 0) {
+        div.innerHTML = "<p class='text-muted'>Nenhum atendimento registrado hoje.</p>";
+        return;
+    }
+
+    div.innerHTML = agendaHoje.map(a => `
+        <div class="glass-panel" style="padding:15px; margin-bottom:10px; border-left:4px solid var(--primary); display:flex; justify-content:space-between; align-items:center">
+            <div>
+                <strong style="font-size:18px">${a.hora}</strong>
+                <h4>${a.nomeCliente}</h4>
+                <small class="text-muted">${a.servicos.map(s => s.nome).join(", ")}</small>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px">
+                <h3 style="color:var(--success); margin-right:10px">R$ ${a.total.toFixed(2)}</h3>
+                
+                <button class="btn-small bg-yellow" onclick="editarAtendimento(${a.id})" title="Editar Venda">
+                    <i data-lucide="pencil" style="width:14px"></i>
+                </button>
+                
+                <button class="btn-small bg-purple" onclick="if(confirm('Excluir este atendimento?')) db.ref('atendimentos/${a.id}').remove()" title="Excluir">
+                    <i data-lucide="trash-2" style="width:14px"></i>
+                </button>
+            </div>
+        </div>
+    `).join("");
+    lucide.createIcons();
+}
+
+function editarAtendimento(id) {
+    const a = store.atendimentos.find(item => item.id === id);
+    if (!a) return;
+
+    // Carrega dados de volta para o PDV
+    idAtendimentoEdicao = id;
+    
+    // Configura Cliente
+    document.getElementById("pdv-cliente").value = a.clienteId || "";
+    
+    // Configura Carrinho
+    store.carrinho = a.servicos ? [...a.servicos] : [];
+    
+    // Configura Pagamento e Obs
+    document.getElementById("pdv-pagamento").value = a.pagamento || "Dinheiro";
+    document.getElementById("pdv-obs").value = a.obs || "";
+    document.getElementById("pdv-retorno").value = a.previsaoRetorno || "";
+
+    // Renderiza o carrinho atualizado
+    renderCarrinho();
+    
+    // Leva o usuário para a aba de Venda
+    abrirAba('novo_atendimento');
+    
+    dispararToast("Modo de edição ativado para: " + a.nomeCliente);
+}
+
+// ==========================================
+// 6. CLIENTES & RETORNOS
 // ==========================================
 function renderTabelaClientes() {
     const tbody = document.getElementById("tabela-clientes");
+    if(!tbody) return;
+
     tbody.innerHTML = store.clientes.map(c => {
         const telefoneClean = c.telefone ? c.telefone.replace(/\D/g, '') : '';
-        const linkZap = telefoneClean ? `https://wa.me/55${telefoneClean}?text=Olá ${c.nome}, tudo bem? Sou do Cassia Nunes Hair, passando para lembrar do seu horário!` : '#';
+        const linkZap = telefoneClean ? `https://wa.me/55${telefoneClean}?text=Olá ${c.nome}, Cassia Nunes passando para confirmar seu horário!` : '#';
         
         return `
         <tr>
@@ -290,31 +439,50 @@ function renderTabelaClientes() {
     lucide.createIcons();
 }
 
-function renderRetornosDashboard() {
+function filtrarRetornosDashboard() {
     const div = document.getElementById("lista-retornos-dashboard");
+    if(!div) return;
+
+    const filtroData = document.getElementById("dash-filtro-data").value;
     const hoje = new Date().toISOString().split('T')[0];
     
-    // Clientes com retorno <= hoje (atrasados ou hoje)
-    const pendentes = store.clientes.filter(c => c.previsaoRetorno && c.previsaoRetorno <= hoje);
+    let lista = [];
+
+    if (filtroData) {
+        lista = store.clientes.filter(c => c.previsaoRetorno === filtroData);
+    } else {
+        lista = store.clientes.filter(c => c.previsaoRetorno && c.previsaoRetorno <= hoje);
+    }
     
-    if(pendentes.length === 0) {
-        div.innerHTML = "<p style='padding:15px; opacity:0.6'>Nenhum retorno urgente.</p>";
+    if(lista.length === 0) {
+        const msg = filtroData ? "Nenhum retorno para esta data." : "Nenhum retorno urgente.";
+        div.innerHTML = `<p style='padding:15px; opacity:0.6'>${msg}</p>`;
         return;
     }
 
-    div.innerHTML = pendentes.map(c => {
+    div.innerHTML = lista.map(c => {
         const telefoneClean = c.telefone ? c.telefone.replace(/\D/g, '') : '';
-        const linkZap = telefoneClean ? `https://wa.me/55${telefoneClean}?text=Oi ${c.nome}, deu o tempo do seu retorno! Vamos agendar?` : '#';
+        const linkZap = telefoneClean ? `https://wa.me/55${telefoneClean}?text=Oi ${c.nome}, seu retorno está previsto para ${formatarData(c.previsaoRetorno)}.` : '#';
+        const isLate = c.previsaoRetorno < hoje;
+        const color = isLate ? '#f43f5e' : '#f59e0b';
         
         return `
         <div style="padding:10px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center">
             <div>
                 <strong>${c.nome}</strong><br>
-                <small style="color:#f43f5e">Era para: ${formatarData(c.previsaoRetorno)}</small>
+                <small style="color:${color}">${isLate ? 'Atrasado: ' : 'Data: '}${formatarData(c.previsaoRetorno)}</small>
             </div>
             ${telefoneClean ? `<a href="${linkZap}" target="_blank" class="btn-small bg-green" style="text-decoration:none">Chamar</a>` : ''}
         </div>
     `}).join("");
+}
+
+function limparFiltroRetorno() {
+    const input = document.getElementById("dash-filtro-data");
+    if(input) {
+        input.value = "";
+        filtrarRetornosDashboard();
+    }
 }
 
 function abrirModalCliente() {
@@ -329,9 +497,175 @@ function abrirModalCliente() {
     }
 }
 
-// ANAMNESE LOGIC
-let clienteAnamneseAtual = null;
+// ==========================================
+// 7. DESPESAS
+// ==========================================
+function lancarDespesa() {
+    const desc = document.getElementById("desp-desc").value;
+    const valor = parseFloat(document.getElementById("desp-valor").value);
+    const data = document.getElementById("desp-data").value;
+    const cat = document.getElementById("desp-cat").value;
 
+    if(!desc || isNaN(valor) || !data) return alert("Preencha tudo!");
+
+    if (idDespesaEdicao) {
+        db.ref(`despesas/${idDespesaEdicao}`).update({ 
+            descricao: desc, valor: valor, data: data, categoria: cat 
+        }).then(() => dispararToast("Despesa atualizada!"));
+        cancelarEdicaoDespesa();
+    } else {
+        const id = Date.now();
+        db.ref(`despesas/${id}`).set({ 
+            id, descricao: desc, valor: valor, data: data, categoria: cat, tipo: 'saida' 
+        }).then(() => dispararToast("Despesa salva!"));
+        
+        document.getElementById("desp-desc").value = "";
+        document.getElementById("desp-valor").value = "";
+    }
+}
+
+function renderListaGestaoDespesas() {
+    const tbody = document.getElementById("lista-gestao-despesas");
+    if(!tbody) return;
+    
+    const lista = [...store.despesas].sort((a,b) => new Date(b.data) - new Date(a.data));
+    
+    tbody.innerHTML = lista.map(d => `
+        <tr>
+            <td>${formatarData(d.data)}</td>
+            <td>${d.descricao}</td>
+            <td>R$ ${d.valor.toFixed(2)}</td>
+            <td>
+                <button class="btn-small bg-yellow" onclick="prepararEdicaoDespesa(${d.id})">Editar</button>
+                <button class="btn-small bg-purple" onclick="if(confirm('Apagar?')) db.ref('despesas/${d.id}').remove()">X</button>
+            </td>
+        </tr>
+    `).join("");
+}
+
+function prepararEdicaoDespesa(id) {
+    const d = store.despesas.find(x => x.id === id);
+    if(!d) return;
+
+    document.getElementById("desp-desc").value = d.descricao;
+    document.getElementById("desp-valor").value = d.valor;
+    document.getElementById("desp-data").value = d.data;
+    document.getElementById("desp-cat").value = d.categoria;
+    
+    idDespesaEdicao = id;
+    
+    const titulo = document.getElementById("titulo-form-despesa");
+    if(titulo) titulo.innerText = "Editar Despesa";
+    
+    const btnSalvar = document.getElementById("btn-salvar-despesa");
+    if(btnSalvar) btnSalvar.innerText = "SALVAR ALTERAÇÕES";
+    
+    const btnCancelar = document.getElementById("btn-cancelar-despesa");
+    if(btnCancelar) btnCancelar.style.display = "inline-block";
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelarEdicaoDespesa() {
+    idDespesaEdicao = null;
+    
+    const titulo = document.getElementById("titulo-form-despesa");
+    if(titulo) titulo.innerText = "Registrar Despesa";
+    
+    const btnSalvar = document.getElementById("btn-salvar-despesa");
+    if(btnSalvar) btnSalvar.innerText = "LANÇAR DESPESA";
+    
+    const btnCancelar = document.getElementById("btn-cancelar-despesa");
+    if(btnCancelar) btnCancelar.style.display = "none";
+    
+    document.getElementById("desp-desc").value = "";
+    document.getElementById("desp-valor").value = "";
+}
+
+// ==========================================
+// 8. SERVIÇOS (COM EDIÇÃO)
+// ==========================================
+function salvarServicoCad() {
+    const nome = document.getElementById("serv-nome").value;
+    const preco = document.getElementById("serv-preco").value;
+
+    if(!nome || !preco) return dispararToast("Preencha nome e preço!", "error");
+
+    if (idServicoEdicao) {
+        db.ref(`servicos/${idServicoEdicao}`).update({ 
+            nome: nome, preco: preco 
+        }).then(() => dispararToast("Serviço atualizado!"));
+        cancelarEdicaoServico();
+    } else {
+        const id = Date.now();
+        db.ref(`servicos/${id}`).set({ id, nome, preco });
+        dispararToast("Serviço salvo!");
+        document.getElementById("serv-nome").value = "";
+        document.getElementById("serv-preco").value = "";
+    }
+}
+
+function renderListaServicosCad() {
+    const div = document.getElementById("lista-servicos-cad");
+    
+    div.innerHTML = store.servicos.map(s => `
+        <div class="glass-panel" style="padding:15px; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+            <div>
+                <strong>${s.nome}</strong><br>
+                <span class="text-gradient">R$ ${parseFloat(s.preco).toFixed(2)}</span>
+            </div>
+            <div style="display:flex; gap:10px">
+                <button class="btn-small bg-yellow" onclick="prepararEdicaoServico(${s.id})" title="Editar">
+                    <i data-lucide="pencil" style="width:14px"></i>
+                </button>
+                <button class="btn-small bg-purple" onclick="if(confirm('Excluir?')) db.ref('servicos/${s.id}').remove()" title="Excluir">
+                    <i data-lucide="trash-2" style="width:14px"></i>
+                </button>
+            </div>
+        </div>
+    `).join("");
+    lucide.createIcons();
+}
+
+function prepararEdicaoServico(id) {
+    const s = store.servicos.find(x => x.id === id);
+    if(!s) return;
+
+    document.getElementById("serv-nome").value = s.nome;
+    document.getElementById("serv-preco").value = s.preco;
+    
+    idServicoEdicao = id;
+    
+    const btnSalvar = document.getElementById("btn-salvar-servico");
+    if(btnSalvar) {
+        btnSalvar.innerText = "ATUALIZAR";
+        btnSalvar.style.background = "var(--warning)";
+    }
+    
+    const btnCancelar = document.getElementById("btn-cancelar-servico");
+    if(btnCancelar) btnCancelar.style.display = "block";
+    
+    document.getElementById("servicos").scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelarEdicaoServico() {
+    idServicoEdicao = null;
+    document.getElementById("serv-nome").value = "";
+    document.getElementById("serv-preco").value = "";
+    
+    const btnSalvar = document.getElementById("btn-salvar-servico");
+    if(btnSalvar) {
+        btnSalvar.innerText = "Salvar";
+        btnSalvar.style.background = "";
+    }
+    
+    const btnCancelar = document.getElementById("btn-cancelar-servico");
+    if(btnCancelar) btnCancelar.style.display = "none";
+}
+
+// ==========================================
+// 9. FUNÇÕES AUXILIARES, GRÁFICOS E MODAIS
+// ==========================================
 function abrirModalAnamnese(id) {
     clienteAnamneseAtual = store.clientes.find(c => c.id == id);
     if(!clienteAnamneseAtual) return;
@@ -379,20 +713,23 @@ function fecharModal(id) {
     document.getElementById(id).style.display = 'none';
 }
 
-// ==========================================
-// 6. FINANCEIRO & GRÁFICOS NEON
-// ==========================================
-function lancarDespesa() {
-    const desc = document.getElementById("desp-desc").value;
-    const valor = parseFloat(document.getElementById("desp-valor").value);
-    const data = document.getElementById("desp-data").value;
-    const cat = document.getElementById("desp-cat").value;
+function atualizarKPIs() {
+    const hoje = new Date().toISOString().split('T')[0];
+    const atendimentosHoje = store.atendimentos.filter(a => a.data === hoje);
+    const fatHoje = atendimentosHoje.reduce((acc, a) => acc + a.total, 0);
+    const retornosPendentes = store.clientes.filter(c => c.previsaoRetorno && c.previsaoRetorno <= hoje).length;
 
-    if(!desc || isNaN(valor) || !data) return alert("Preencha tudo!");
+    document.getElementById("dash-faturamento").innerText = `R$ ${fatHoje.toFixed(2)}`;
+    document.getElementById("dash-atendimentos").innerText = atendimentosHoje.length;
+    document.getElementById("dash-retornos").innerText = retornosPendentes;
 
-    const despesa = { id: Date.now(), descricao: desc, valor: valor, data: data, categoria: cat, tipo: 'saida' };
-    db.ref(`despesas/${despesa.id}`).set(despesa);
-    dispararToast("Despesa salva!");
+    const mesAtual = new Date().getMonth();
+    const entMes = store.atendimentos.filter(a => new Date(a.data).getMonth() === mesAtual).reduce((acc, a) => acc + a.total, 0);
+    const saiMes = store.despesas.filter(d => new Date(d.data).getMonth() === mesAtual).reduce((acc, d) => acc + d.valor, 0);
+    
+    document.getElementById("fin-entradas").innerText = `R$ ${entMes.toFixed(2)}`;
+    document.getElementById("fin-saidas").innerText = `R$ ${saiMes.toFixed(2)}`;
+    document.getElementById("fin-lucro").innerText = `R$ ${(entMes - saiMes).toFixed(2)}`;
 }
 
 function renderTabelaFinanceiro() {
@@ -411,28 +748,7 @@ function renderTabelaFinanceiro() {
     `).join("");
 }
 
-function atualizarKPIs() {
-    const hoje = new Date().toISOString().split('T')[0];
-    const atendimentosHoje = store.atendimentos.filter(a => a.data === hoje);
-    const fatHoje = atendimentosHoje.reduce((acc, a) => acc + a.total, 0);
-    const retornosPendentes = store.clientes.filter(c => c.previsaoRetorno && c.previsaoRetorno <= hoje).length;
-
-    document.getElementById("dash-faturamento").innerText = `R$ ${fatHoje.toFixed(2)}`;
-    document.getElementById("dash-atendimentos").innerText = atendimentosHoje.length;
-    document.getElementById("dash-retornos").innerText = retornosPendentes;
-
-    // Mensal
-    const mesAtual = new Date().getMonth();
-    const entMes = store.atendimentos.filter(a => new Date(a.data).getMonth() === mesAtual).reduce((acc, a) => acc + a.total, 0);
-    const saiMes = store.despesas.filter(d => new Date(d.data).getMonth() === mesAtual).reduce((acc, d) => acc + d.valor, 0);
-    
-    document.getElementById("fin-entradas").innerText = `R$ ${entMes.toFixed(2)}`;
-    document.getElementById("fin-saidas").innerText = `R$ ${saiMes.toFixed(2)}`;
-    document.getElementById("fin-lucro").innerText = `R$ ${(entMes - saiMes).toFixed(2)}`;
-}
-
 function atualizarGraficos() {
-    // 1. Top Serviços (Doughnut Neon)
     const contagem = {};
     store.atendimentos.forEach(a => a.servicos.forEach(s => contagem[s.nome] = (contagem[s.nome] || 0) + 1));
     const sorted = Object.entries(contagem).sort((a,b) => b[1] - a[1]).slice(0,5);
@@ -458,9 +774,7 @@ function atualizarGraficos() {
         }
     });
 
-    // 2. Fluxo Semanal (Line Chart Neon)
-    // Agrupar ultimos 7 dias (logica simplificada)
-    const ultimos = store.atendimentos.slice(0, 10).reverse(); // Apenas exemplo
+    const ultimos = store.atendimentos.slice(0, 10).reverse(); 
     const ctxWeek = document.getElementById("chartSemanal");
     if(chartSemana) chartSemana.destroy();
 
@@ -474,7 +788,7 @@ function atualizarGraficos() {
                 borderColor: '#10b981',
                 backgroundColor: 'rgba(16, 185, 129, 0.1)',
                 borderWidth: 3,
-                tension: 0.4, // Curva suave
+                tension: 0.4,
                 fill: true,
                 pointBackgroundColor: '#09090b',
                 pointBorderColor: '#10b981',
@@ -491,58 +805,6 @@ function atualizarGraficos() {
             }
         }
     });
-}
-
-// ==========================================
-// 7. UTILS E AGENDA
-// ==========================================
-function renderAgenda() {
-    const div = document.getElementById("lista-agenda");
-    const hoje = new Date().toISOString().split('T')[0];
-    const agendaHoje = store.atendimentos.filter(a => a.data === hoje).sort((a,b) => b.timestamp - a.timestamp);
-
-    document.getElementById("agenda-data-display").innerText = new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'numeric'});
-
-    if(agendaHoje.length === 0) {
-        div.innerHTML = "<p class='text-muted'>Nenhum atendimento registrado hoje.</p>";
-        return;
-    }
-
-    div.innerHTML = agendaHoje.map(a => `
-        <div class="glass-panel" style="padding:15px; margin-bottom:10px; border-left:4px solid var(--primary); display:flex; justify-content:space-between; align-items:center">
-            <div>
-                <strong style="font-size:18px">${a.hora}</strong>
-                <h4>${a.nomeCliente}</h4>
-                <small class="text-muted">${a.servicos.map(s => s.nome).join(", ")}</small>
-            </div>
-            <h3 style="color:var(--success)">R$ ${a.total.toFixed(2)}</h3>
-        </div>
-    `).join("");
-}
-
-function salvarServicoCad() {
-    const nome = document.getElementById("serv-nome").value;
-    const preco = document.getElementById("serv-preco").value;
-    if(!nome) return;
-    const id = Date.now();
-    db.ref(`servicos/${id}`).set({ id, nome, preco });
-    dispararToast("Serviço Salvo!");
-    document.getElementById("serv-nome").value = "";
-    document.getElementById("serv-preco").value = "";
-}
-
-function renderListaServicosCad() {
-    const div = document.getElementById("lista-servicos-cad");
-    div.innerHTML = store.servicos.map(s => `
-        <div class="glass-panel" style="padding:15px; display:flex; justify-content:space-between; align-items:center">
-            <div>
-                <strong>${s.nome}</strong><br>
-                <span class="text-gradient">R$ ${parseFloat(s.preco).toFixed(2)}</span>
-            </div>
-            <i data-lucide="trash-2" onclick="if(confirm('Excluir?')) db.ref('servicos/${s.id}').remove()" style="cursor:pointer; color:#f43f5e"></i>
-        </div>
-    `).join("");
-    lucide.createIcons();
 }
 
 function filtrarClientes() {
