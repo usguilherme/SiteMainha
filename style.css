@@ -21,14 +21,13 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-main); }
 
-/* DIMINUIÇÃO GERAL DA FONTE PARA REDUZIR A SENSAÇÃO DE ZOOM */
 body { 
     background: var(--bg-dark); 
     color: var(--text-main); 
     height: 100vh; 
     overflow: hidden; 
     position: relative; 
-    font-size: 13px; /* Fonte base menor */
+    font-size: 13px; 
 }
 
 /* =========================================
@@ -67,8 +66,8 @@ body {
    ========================================= */
 .glass-panel {
     background: var(--glass); backdrop-filter: blur(16px);
-    border: 1px solid var(--glass-border); border-radius: 16px; /* Borda menor */
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); padding: 15px; /* Padding reduzido */
+    border: 1px solid var(--glass-border); border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); padding: 15px;
 }
 .glass-card {
     background: rgba(20, 20, 20, 0.9); backdrop-filter: blur(20px);
@@ -100,10 +99,10 @@ body {
 .error-msg { color: var(--danger); margin-top: 10px; display: none; font-size: 12px; }
 
 /* =========================================
-   5. LAYOUT & SIDEBAR (MAIS FINA)
+   5. LAYOUT & SIDEBAR
    ========================================= */
 .app-layout { display: flex; height: 100vh; padding: 8px; gap: 8px; }
-.sidebar { width: 220px; padding: 15px; display: flex; flex-direction: column; } /* Largura reduzida */
+.sidebar { width: 220px; padding: 15px; display: flex; flex-direction: column; }
 .sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 0 5px; }
 .brand { font-family: var(--font-display); font-size: 18px; font-weight: 800; }
 .brand span { color: var(--primary); }
@@ -135,7 +134,7 @@ body {
 .content-scroll { flex: 1; overflow-y: auto; padding: 0 5px 5px 0; }
 
 /* =========================================
-   6. KPI & CHARTS (COMPACTOS)
+   6. KPI & CHARTS (CORREÇÃO DE TAMANHO)
    ========================================= */
 .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 15px; }
 .kpi-card { padding: 15px; display: flex; align-items: center; gap: 15px; position: relative; overflow: hidden; }
@@ -147,12 +146,27 @@ body {
 .kpi-card span { font-size: 12px; }
 
 .charts-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 10px; }
-.chart-box { padding: 15px; height: 300px; display: flex; flex-direction: column; } /* Altura reduzida */
+
+/* CORREÇÃO DO TAMANHO DO GRÁFICO AQUI */
+.chart-box { 
+    padding: 15px; 
+    height: 260px; /* Altura reduzida para evitar overflow */
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden; /* Impede o gráfico de vazar */
+}
 .chart-box h4 { font-size: 14px; margin-bottom: 10px; }
-.canvas-wrapper { flex: 1; position: relative; }
+
+.canvas-wrapper { 
+    flex: 1; 
+    position: relative; 
+    width: 100%;
+    height: 100%;
+    min-height: 0; /* Crucial para o gráfico respeitar o flexbox */
+}
 
 /* =========================================
-   7. PDV (INPUTS FINOS)
+   7. PDV
    ========================================= */
 .pdv-layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 10px; height: 100%; }
 .pdv-left, .pdv-right { padding: 20px; display: flex; flex-direction: column; }
@@ -160,7 +174,6 @@ body {
 .step-num { display: inline-block; width: 20px; height: 20px; background: var(--primary); color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 11px; margin-right: 8px; }
 .step-box h3 { display: inline-block; font-size: 14px; margin-bottom: 5px; }
 
-/* INPUTS MAIS FINOS */
 .modern-input {
     width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border);
     padding: 8px 10px; border-radius: 8px; color: white; margin-top: 3px;
@@ -239,7 +252,7 @@ body {
     background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 5000;
     display: flex; justify-content: center; align-items: center;
 }
-.modal-window { width: 500px; padding: 25px; } /* Modal menor */
+.modal-window { width: 500px; padding: 25px; }
 .modal-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
 .close-btn { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
 .text-gradient { background: linear-gradient(to right, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -253,10 +266,8 @@ body {
 .divider { height: 1px; background: var(--border); margin: 15px 0; }
 .simple-list { max-height: 180px; overflow-y: auto; }
 
-/* Animações */
 .fade-in { animation: fadeIn 0.4s ease-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
 
 /* Responsividade */
 @media (max-width: 768px) {
