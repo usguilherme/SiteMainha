@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cassia Nunes Hair | Sistema PRO</title>
+    <title>Cassia Nunes | Sistema de Gestão</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
@@ -18,8 +18,8 @@
     <div id="loader-overlay" class="loader-overlay">
         <div class="loader-content">
             <div class="loader-circle"></div>
-            <h2>CN SYSTEM</h2>
-            <p>Carregando ambiente...</p>
+            <h2>CASSIA NUNES</h2>
+            <p>Carregando...</p>
         </div>
     </div>
 
@@ -29,18 +29,19 @@
         <div class="blob blob-3"></div>
     </div>
 
-    <div id="login-overlay" class="login-overlay" style="display:none"> <div class="glass-card login-card">
+    <div id="login-overlay" class="login-overlay" style="display:none">
+        <div class="glass-card login-card">
             <div class="login-header">
                 <div class="logo-circle">CN</div>
-                <h1>Acesso Restrito</h1>
-                <p>Cassia Nunes Hair OS</p>
+                <h1>Cassia Nunes</h1>
+                <p>Acesso Restrito</p>
             </div>
             <div class="input-wrapper">
                 <i data-lucide="lock" class="input-icon"></i>
                 <input type="password" id="input-senha" placeholder="Senha Mestra..." onkeyup="if(event.key==='Enter') verificarSenha()">
             </div>
-            <button onclick="verificarSenha()" class="btn-glow">INICIAR SESSÃO</button>
-            <p id="erro-senha" class="error-msg">Credencial Inválida</p>
+            <button onclick="verificarSenha()" class="btn-glow">ACESSAR</button>
+            <p id="erro-senha" class="error-msg">Senha Incorreta</p>
         </div>
     </div>
 
@@ -48,7 +49,7 @@
         <aside class="sidebar glass-panel">
             <div class="sidebar-header">
                 <div class="brand">
-                    <span>CN</span> HAIR
+                    <span>CASSIA</span> NUNES
                 </div>
                 <div class="status-dot online"></div>
             </div>
@@ -67,7 +68,7 @@
                 
                 <p class="nav-title">GESTÃO</p>
                 <a onclick="abrirAba('clientes')" class="nav-item">
-                    <i data-lucide="users"></i> Clientes VIP
+                    <i data-lucide="users"></i> Clientes
                 </a>
                 <a onclick="abrirAba('financeiro')" class="nav-item">
                     <i data-lucide="wallet"></i> Financeiro
@@ -128,18 +129,25 @@
 
                     <div class="charts-grid">
                         <div class="chart-box glass-panel">
-                            <h4>🔥 Top 5 Serviços</h4>
+                            <h4>🔥 Top Serviços</h4>
                             <div class="canvas-wrapper"><canvas id="chartTopServicos"></canvas></div>
                         </div>
                         <div class="chart-box glass-panel">
-                            <h4>📈 Fluxo Financeiro (Semanal)</h4>
+                            <h4>📈 Fluxo Semanal</h4>
                             <div class="canvas-wrapper"><canvas id="chartSemanal"></canvas></div>
                         </div>
                     </div>
 
-                    <div class="glass-panel mt-20">
-                        <h3><i data-lucide="alert-circle" style="width:16px; display:inline"></i> Atenção: Retornos para Hoje/Atrasados</h3>
-                        <div id="lista-retornos-dashboard" class="simple-list"></div>
+                    <div class="glass-panel mt-15">
+                        <div class="table-header">
+                            <h3><i data-lucide="calendar-search" style="width:16px"></i> Consultar Retornos</h3>
+                            <div style="display:flex; align-items:center; gap:5px">
+                                <span style="font-size:11px; opacity:0.7">Ver dia:</span>
+                                <input type="date" id="dash-filtro-data" class="modern-input" style="width:130px; padding:4px; margin:0" onchange="filtrarRetornosDashboard()">
+                                <button onclick="limparFiltroRetorno()" class="btn-small">Hoje/Atrasados</button>
+                            </div>
+                        </div>
+                        <div id="lista-retornos-dashboard" class="simple-list mt-10"></div>
                     </div>
                 </section>
 
@@ -166,23 +174,27 @@
 
                             <div class="divider"></div>
 
-                            <h3>Detalhes do Pós-Venda</h3>
+                            <h3>Agendamento de Retorno</h3>
                             <div class="grid-2">
                                 <div>
-                                    <label>Agendar Retorno</label>
-                                    <input type="date" id="pdv-retorno" class="modern-input">
+                                    <label style="font-size:11px; opacity:0.7">Dias para voltar?</label>
+                                    <input type="number" id="pdv-dias-retorno" class="modern-input" placeholder="Ex: 30" oninput="calcularDataRetorno()">
                                 </div>
                                 <div>
-                                    <label>Obs. Técnicas</label>
-                                    <input type="text" id="pdv-obs" class="modern-input" placeholder="Ex: Usado tinta 7.1...">
+                                    <label style="font-size:11px; opacity:0.7">Data calculada</label>
+                                    <input type="date" id="pdv-retorno" class="modern-input">
                                 </div>
+                            </div>
+                            <div class="mt-10">
+                                <label style="font-size:11px; opacity:0.7">Observações</label>
+                                <input type="text" id="pdv-obs" class="modern-input" placeholder="Ex: Cliente gosta de água morna...">
                             </div>
                         </div>
 
                         <div class="pdv-right glass-panel">
                             <div class="ticket-header">
-                                <h3>Cupom Atual</h3>
-                                <span class="badge">Em aberto</span>
+                                <h3>Cupom</h3>
+                                <span class="badge">Aberto</span>
                             </div>
                             <ul id="lista-carrinho" class="carrinho-list">
                                 <li class="empty-state">Carrinho vazio...</li>
@@ -190,16 +202,32 @@
                             
                             <div class="checkout-area">
                                 <div class="total-display">
-                                    <span>Subtotal</span>
+                                    <span>Total</span>
                                     <h2 id="pdv-total">R$ 0,00</h2>
                                 </div>
-                                <select id="pdv-pagamento" class="modern-input mb-10">
+                                
+                                <label style="font-size:11px; opacity:0.7">Pagamento</label>
+                                <select id="pdv-pagamento" class="modern-input mb-10" onchange="toggleTroco()">
                                     <option value="Dinheiro">💵 Dinheiro</option>
                                     <option value="Pix">💠 Pix</option>
-                                    <option value="Cartão Crédito">💳 Cartão Crédito</option>
-                                    <option value="Cartão Débito">💳 Cartão Débito</option>
+                                    <option value="Cartão Crédito">💳 Crédito</option>
+                                    <option value="Cartão Débito">💳 Débito</option>
                                 </select>
-                                <button onclick="finalizarVenda()" class="btn-checkout">CONFIRMAR E IMPRIMIR</button>
+
+                                <div id="area-troco" style="background:rgba(0,0,0,0.2); padding:8px; border-radius:8px; margin-bottom:10px; display:block;">
+                                    <div style="display:flex; gap:10px; margin-bottom:2px">
+                                        <div style="flex:1">
+                                            <label style="font-size:10px">Valor Recebido</label>
+                                            <input type="number" id="pdv-valor-pago" class="modern-input" style="margin:0; padding:6px" placeholder="R$ 0,00" oninput="calcularTroco()">
+                                        </div>
+                                        <div style="flex:1; text-align:right">
+                                            <label style="font-size:10px">Troco</label>
+                                            <h3 id="pdv-troco-display" style="color:var(--success); margin-top:2px; font-size:16px">R$ 0,00</h3>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button onclick="finalizarVenda()" class="btn-checkout">CONFIRMAR</button>
                             </div>
                         </div>
                     </div>
@@ -210,7 +238,7 @@
                         <div class="table-header">
                             <div class="search-box">
                                 <i data-lucide="search"></i>
-                                <input type="text" id="busca-cliente" placeholder="Buscar por nome..." onkeyup="filtrarClientes()" class="search-input">
+                                <input type="text" id="busca-cliente" placeholder="Buscar cliente..." onkeyup="filtrarClientes()" class="search-input">
                             </div>
                             <button onclick="abrirModalCliente()" class="btn-primary">Novo Cliente</button>
                         </div>
@@ -221,7 +249,7 @@
                                         <th>Nome / Contato</th>
                                         <th>Status</th>
                                         <th>Última Visita</th>
-                                        <th>Próximo Retorno</th>
+                                        <th>Retorno</th>
                                         <th>Ações</th>
                                     </tr>
                                 </thead>
@@ -246,8 +274,8 @@
                             <h2 id="fin-lucro">R$ 0,00</h2>
                         </div>
                     </div>
-                    <div class="glass-panel mt-20">
-                        <h3>Extrato de Lançamentos</h3>
+                    <div class="glass-panel mt-15">
+                        <h3>Extrato Geral</h3>
                         <div class="table-responsive">
                             <table class="modern-table">
                                 <thead>
@@ -262,34 +290,54 @@
                 <section id="agenda" class="aba fade-in" style="display:none">
                     <div class="glass-panel">
                          <h3 id="agenda-data-display" class="mb-10 text-gradient"></h3>
-                         <p class="text-muted">Atendimentos realizados na data de hoje:</p>
-                         <div id="lista-agenda" class="grid-agenda mt-20"></div>
+                         <div id="lista-agenda" class="grid-agenda mt-15"></div>
                     </div>
                 </section>
 
                 <section id="servicos" class="aba fade-in" style="display:none">
                     <div class="glass-panel form-inline">
+                        <input type="hidden" id="id-servico-edicao">
+                        
                         <input type="text" id="serv-nome" placeholder="Nome do Serviço" class="modern-input">
                         <input type="number" id="serv-preco" placeholder="Valor (R$)" class="modern-input">
-                        <button onclick="salvarServicoCad()" class="btn-primary">Salvar</button>
+                        
+                        <div style="display:flex; gap:5px; align-items:center">
+                            <button onclick="salvarServicoCad()" id="btn-salvar-servico" class="btn-primary">Salvar</button>
+                            <button onclick="cancelarEdicaoServico()" id="btn-cancelar-servico" class="btn-danger" style="display:none; padding: 0 10px;">X</button>
+                        </div>
                     </div>
-                    <div id="lista-servicos-cad" class="grid-cards mt-20"></div>
+                    <div id="lista-servicos-cad" class="grid-cards mt-15"></div>
                 </section>
 
                 <section id="despesas" class="aba fade-in" style="display:none">
                     <div class="glass-panel">
-                        <h3>Registrar Saída</h3>
+                        <h3 id="titulo-form-despesa">Registrar Despesa</h3>
+                        <input type="hidden" id="id-despesa-edicao"> 
                         <div class="grid-2">
-                            <input type="text" id="desp-desc" placeholder="Descrição (ex: Luz, Água, Produto)" class="modern-input">
+                            <input type="text" id="desp-desc" placeholder="Descrição (ex: Luz)" class="modern-input">
                             <input type="number" id="desp-valor" placeholder="Valor (R$)" class="modern-input">
                             <input type="date" id="desp-data" class="modern-input">
                             <select id="desp-cat" class="modern-input">
-                                <option value="Fixa">Custo Fixo (Aluguel/Contas)</option>
-                                <option value="Produto">Reposição de Estoque</option>
-                                <option value="Pessoal">Retirada Pessoal</option>
+                                <option value="Fixa">Custo Fixo</option>
+                                <option value="Produto">Produtos</option>
+                                <option value="Pessoal">Pessoal</option>
                             </select>
                         </div>
-                        <button onclick="lancarDespesa()" class="btn-danger mt-10 full-width">LANÇAR DESPESA</button>
+                        
+                        <div class="grid-2 mt-10">
+                            <button onclick="lancarDespesa()" id="btn-salvar-despesa" class="btn-danger full-width">LANÇAR</button>
+                            <button onclick="cancelarEdicaoDespesa()" id="btn-cancelar-despesa" class="btn-small" style="display:none; background:#444">CANCELAR</button>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel mt-15">
+                        <h3>Gerenciar Despesas</h3>
+                        <div class="table-responsive">
+                            <table class="modern-table">
+                                <thead><tr><th>Data</th><th>Descrição</th><th>Valor</th><th>Ação</th></tr></thead>
+                                <tbody id="lista-gestao-despesas"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
 
@@ -300,17 +348,16 @@
     <div id="modal-anamnese" class="modal-backdrop" style="display:none">
         <div class="glass-card modal-window">
             <div class="modal-header">
-                <h3>Ficha Técnica & Histórico</h3>
+                <h3>Ficha Técnica</h3>
                 <button onclick="fecharModal('modal-anamnese')" class="close-btn">×</button>
             </div>
             <div class="modal-body">
                 <h2 id="anamnese-cliente-nome" class="text-gradient">Cliente</h2>
                 <div id="historico-lista" class="historico-box"></div>
                 <div class="new-entry">
-                    <label>Adicionar Novo Registro</label>
-                    <input type="text" id="anam-titulo" placeholder="Procedimento Realizado" class="modern-input">
-                    <textarea id="anam-obs" placeholder="Detalhes técnicos (Mistura, tempo, ox...)" class="modern-input"></textarea>
-                    <button onclick="salvarAnamnese()" class="btn-glow full-width mt-10">SALVAR NO PRONTUÁRIO</button>
+                    <input type="text" id="anam-titulo" placeholder="Procedimento" class="modern-input">
+                    <textarea id="anam-obs" placeholder="Detalhes técnicos..." class="modern-input"></textarea>
+                    <button onclick="salvarAnamnese()" class="btn-glow full-width mt-10">SALVAR</button>
                 </div>
             </div>
         </div>
