@@ -21,6 +21,7 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-main); }
 
+/* FONTE BASE MENOR PARA REDUZIR O "ZOOM" */
 body { 
     background: var(--bg-dark); 
     color: var(--text-main); 
@@ -99,7 +100,7 @@ body {
 .error-msg { color: var(--danger); margin-top: 10px; display: none; font-size: 12px; }
 
 /* =========================================
-   5. LAYOUT & SIDEBAR
+   5. LAYOUT & SIDEBAR (COMPACTA)
    ========================================= */
 .app-layout { display: flex; height: 100vh; padding: 8px; gap: 8px; }
 .sidebar { width: 220px; padding: 15px; display: flex; flex-direction: column; }
@@ -147,13 +148,13 @@ body {
 
 .charts-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 10px; }
 
-/* CORREÇÃO DO TAMANHO DO GRÁFICO AQUI */
+/* Correção para o gráfico não vazar */
 .chart-box { 
     padding: 15px; 
-    height: 260px; /* Altura reduzida para evitar overflow */
+    height: 260px; /* Altura reduzida */
     display: flex; 
     flex-direction: column; 
-    overflow: hidden; /* Impede o gráfico de vazar */
+    overflow: hidden; 
 }
 .chart-box h4 { font-size: 14px; margin-bottom: 10px; }
 
@@ -162,11 +163,11 @@ body {
     position: relative; 
     width: 100%;
     height: 100%;
-    min-height: 0; /* Crucial para o gráfico respeitar o flexbox */
+    min-height: 0;
 }
 
 /* =========================================
-   7. PDV
+   7. PDV & INPUTS
    ========================================= */
 .pdv-layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 10px; height: 100%; }
 .pdv-left, .pdv-right { padding: 20px; display: flex; flex-direction: column; }
@@ -269,7 +270,6 @@ body {
 .fade-in { animation: fadeIn 0.4s ease-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-/* Responsividade */
 @media (max-width: 768px) {
     .app-layout { flex-direction: column; overflow-y: auto; height: auto; }
     .sidebar { width: 100%; height: auto; margin-bottom: 5px; padding: 10px; }
