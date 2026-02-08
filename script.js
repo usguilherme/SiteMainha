@@ -1,5 +1,5 @@
 // ==========================================
-// 1. CONFIGURAÇÃO FIREBASE (CORRIGIDA: MAINHASITE)
+// 1. CONFIGURAÇÃO FIREBASE
 // ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyCpNsnwOVDLSZfXn-g6SE1V69BXHs8cYEc",
@@ -11,14 +11,13 @@ const firebaseConfig = {
   appId: "1:11190400668:web:b59e8c134fbaee3e121f59"
 };
 
-// Inicializa Firebase apenas se ainda não estiver ativo
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 const db = firebase.database();
-const auth = firebase.auth(); // Ativa o módulo de autenticação
+const auth = firebase.auth(); 
 
-// Estado Global (Cache)
+// Estado Global
 let store = {
     servicos: [],
     clientes: [],
@@ -27,7 +26,6 @@ let store = {
     carrinho: []
 };
 
-// Variáveis de Controle e Edição
 let chartTop = null;
 let chartSemana = null;
 let idDespesaEdicao = null;
@@ -36,46 +34,72 @@ let idAtendimentoEdicao = null;
 let clienteAnamneseAtual = null;
 
 // ==========================================
-// 2. INICIALIZAÇÃO E AUTENTICAÇÃO SEGURA
+// 2. LÓGICA DE SELEÇÃO DE DISPOSITIVO (NOVO)
+// ==========================================
+function escolherDispositivo(tipo) {
+    const overlay = document.getElementById('device-selection');
+    
+    // Se escolher mobile, adiciona a classe mágica ao corpo do site
+    if (tipo === 'mobile') {
+        document.body.classList.add('mobile-mode');
+        // Pequeno delay para redesenhar ícones no novo layout
+        setTimeout(() => lucide.createIcons(), 100);
+    }
+    
+    // Esconde a tela de seleção
+    overlay.style.opacity = '0';
+    setTimeout(() => {
+        overlay.style.display = 'none';
+        
+        // Verifica se precisa logar. Se não estiver logado, mostra o login.
+        if (!auth.currentUser) {
+            document.getElementById('login-overlay').style.display = 'flex';
+        }
+    }, 300);
+}
+
+// ==========================================
+// 3. INICIALIZAÇÃO E AUTH
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
     lucide.createIcons();
     const loader = document.getElementById("loader-overlay");
     
-    // Ouve mudanças na autenticação (Login/Logout)
     auth.onAuthStateChanged((user) => {
         if (user) {
-            // Usuário logado
             console.log("Logado como:", user.email);
-            
             if(document.getElementById("user-email-display")) {
                 document.getElementById("user-email-display").innerText = user.email;
             }
-            
             if(loader) {
                 loader.style.opacity = '0';
                 setTimeout(() => loader.style.display = 'none', 500);
             }
-            document.getElementById("login-overlay").style.display = 'none';
+            
+            // Só esconde o login overlay se a seleção de dispositivo JÁ tiver sido feita
+            const deviceOverlay = document.getElementById('device-selection');
+            if (deviceOverlay.style.display === 'none') {
+                document.getElementById("login-overlay").style.display = 'none';
+            }
+            
             inicializarSistema();
         } else {
-            // Usuário NÃO logado
+            // Se não estiver logado, não mostramos o login imediatamente.
+            // Esperamos a pessoa escolher o dispositivo primeiro.
             if(loader) {
                 loader.style.opacity = '0';
                 setTimeout(() => loader.style.display = 'none', 500);
             }
-            document.getElementById("login-overlay").style.display = 'flex';
         }
     });
 
-    // Data no Header
     const options = { weekday: 'long', day: 'numeric', month: 'long' };
     const dateEl = document.getElementById("data-hoje");
     if(dateEl) dateEl.innerText = new Date().toLocaleDateString('pt-BR', options);
 });
 
 function verificarSenha() {
-    const email = document.getElementById("input-email").value.trim(); // Remove espaços extras
+    const email = document.getElementById("input-email").value.trim();
     const senha = document.getElementById("input-senha").value;
     const btn = document.querySelector('.btn-glow');
     const erro = document.getElementById("erro-senha");
@@ -86,33 +110,21 @@ function verificarSenha() {
         return;
     }
 
-    // Feedback visual
     btn.innerText = "CONECTANDO...";
     
-    // Tenta fazer login no Firebase
     auth.signInWithEmailAndPassword(email, senha)
         .then(() => {
             btn.innerText = "SUCESSO!";
             erro.style.display = "none";
+            document.getElementById("login-overlay").style.display = 'none';
         })
         .catch((error) => {
             console.error("Erro Login:", error.code);
             erro.style.display = "block";
-            
-            // Mensagens de erro explicativas
             if(error.code === 'auth/user-not-found') erro.innerText = "E-mail não encontrado.";
             else if(error.code === 'auth/wrong-password') erro.innerText = "Senha incorreta.";
-            else if(error.code === 'auth/invalid-email') erro.innerText = "E-mail inválido.";
             else erro.innerText = "Erro ao acessar.";
-
             btn.innerText = "ENTRAR";
-            
-            // Animação de erro
-            document.querySelector('.login-card').animate([
-                { transform: 'translateX(-10px)' },
-                { transform: 'translateX(10px)' },
-                { transform: 'translateX(0)' }
-            ], { duration: 300 });
         });
 }
 
@@ -123,9 +135,8 @@ function logout() {
 }
 
 function inicializarSistema() {
-    console.log("Sistema Cassia Nunes Iniciado");
+    console.log("Sistema Iniciado");
     
-    // Listeners do Firebase (Realtime)
     db.ref('servicos').on('value', snap => {
         store.servicos = snap.val() ? Object.values(snap.val()) : [];
         renderServicosPDV();
@@ -157,23 +168,34 @@ function inicializarSistema() {
 }
 
 // ==========================================
-// 3. NAVEGAÇÃO E UI
+// 4. NAVEGAÇÃO E UI (ATUALIZADA P/ MOBILE)
 // ==========================================
 function abrirAba(idAba) {
+    // Esconde todas as abas
     document.querySelectorAll('.aba').forEach(el => {
         el.style.display = 'none';
         el.classList.remove('fade-in');
     });
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     
+    // Remove classe 'active' da Sidebar (Desktop)
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    // Remove classe 'active' da Bottom Nav (Mobile)
+    document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
+    
+    // Mostra a aba certa
     const aba = document.getElementById(idAba);
     if(aba) {
         aba.style.display = 'block';
         setTimeout(() => aba.classList.add('fade-in'), 10);
     }
     
+    // Ativa botão na Sidebar (Desktop)
     const btnMenu = document.querySelector(`.nav-item[onclick*="${idAba}"]`);
     if(btnMenu) btnMenu.classList.add('active');
+
+    // Ativa botão na Bottom Nav (Mobile)
+    const btnMobile = document.querySelector(`.mobile-nav-item[onclick*="${idAba}"]`);
+    if(btnMobile) btnMobile.classList.add('active');
 
     const titulos = {
         'dashboard': 'Visão Geral',
@@ -199,9 +221,15 @@ function dispararToast(msg, tipo = 'success') {
     el.style.borderLeft = tipo === 'error' ? '4px solid #f43f5e' : '4px solid #10b981';
     el.style.color = 'white';
     el.innerText = msg;
+    el.style.boxShadow = "0 10px 30px rgba(0,0,0,0.5)";
     
     container.style.position = 'fixed';
-    container.style.bottom = '20px';
+    // Se for mobile, o toast aparece mais alto por causa do menu
+    if (document.body.classList.contains('mobile-mode')) {
+        container.style.bottom = '80px'; 
+    } else {
+        container.style.bottom = '20px';
+    }
     container.style.right = '20px';
     container.style.zIndex = '9999';
 
@@ -210,7 +238,7 @@ function dispararToast(msg, tipo = 'success') {
 }
 
 // ==========================================
-// 4. MÓDULO: PDV (CAIXA)
+// 5. MÓDULO: PDV
 // ==========================================
 function renderServicosPDV() {
     const sel = document.getElementById("pdv-servico");
@@ -375,7 +403,7 @@ function finalizarVenda() {
 }
 
 // ==========================================
-// 5. MÓDULO: AGENDA & EDIÇÃO DE VENDAS
+// 6. MÓDULO: AGENDA
 // ==========================================
 function renderAgenda() {
     const div = document.getElementById("lista-agenda");
@@ -422,7 +450,7 @@ function editarAtendimento(id) {
 }
 
 // ==========================================
-// 6. CLIENTES & RETORNOS
+// 7. CLIENTES & FINANCEIRO
 // ==========================================
 function renderTabelaClientes() {
     const tbody = document.getElementById("tabela-clientes");
@@ -500,9 +528,6 @@ function salvarNovoClienteModal() {
     document.getElementById("novo-cli-nasc").value = "";
 }
 
-// ==========================================
-// 7. DESPESAS (COM EDIÇÃO)
-// ==========================================
 function lancarDespesa() {
     const desc = document.getElementById("desp-desc").value;
     const valor = parseFloat(document.getElementById("desp-valor").value);
@@ -551,9 +576,6 @@ function cancelarEdicaoDespesa() {
     document.getElementById("desp-valor").value = "";
 }
 
-// ==========================================
-// 8. SERVIÇOS (COM EDIÇÃO)
-// ==========================================
 function salvarServicoCad() {
     const nome = document.getElementById("serv-nome").value;
     const preco = document.getElementById("serv-preco").value;
@@ -597,9 +619,6 @@ function cancelarEdicaoServico() {
     document.getElementById("btn-cancelar-servico").style.display = "none";
 }
 
-// ==========================================
-// 9. FUNÇÕES AUXILIARES, GRÁFICOS E MODAIS
-// ==========================================
 function abrirModalAnamnese(id) {
     clienteAnamneseAtual = store.clientes.find(c => c.id == id);
     if(!clienteAnamneseAtual) return;
