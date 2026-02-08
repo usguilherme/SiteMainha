@@ -1,5 +1,5 @@
 /* =========================================
-   1. RESET & VARIÁVEIS NASA (VERSÃO COMPACTA)
+   1. RESET & VARIÁVEIS NASA
    ========================================= */
 :root {
     --bg-dark: #09090b;
@@ -21,7 +21,6 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-main); }
 
-/* FONTE BASE MENOR PARA REDUZIR O "ZOOM" */
 body { 
     background: var(--bg-dark); 
     color: var(--text-main); 
@@ -32,7 +31,24 @@ body {
 }
 
 /* =========================================
-   2. CUSTOM SCROLLBAR & LOADER
+   2. TELA DE SELEÇÃO DE DISPOSITIVO (NOVO)
+   ========================================= */
+#device-selection {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(9, 9, 11, 0.98); z-index: 20000;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+}
+.device-cards { display: flex; gap: 20px; margin-top: 30px; }
+.device-option {
+    background: var(--glass); border: 1px solid var(--border);
+    padding: 30px; border-radius: 20px; text-align: center; cursor: pointer;
+    width: 160px; transition: 0.3s;
+}
+.device-option:hover { background: var(--primary); border-color: var(--primary); transform: translateY(-5px); }
+.device-option i { width: 40px; height: 40px; margin-bottom: 10px; color: var(--primary); }
+
+/* =========================================
+   3. UI GERAL & UTILS
    ========================================= */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
@@ -52,9 +68,6 @@ body {
 }
 @keyframes spin { 100% { transform: rotate(360deg); } }
 
-/* =========================================
-   3. BACKGROUND ANIMADO
-   ========================================= */
 .bg-blobs { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; pointer-events: none; }
 .blob { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.4; animation: float 10s infinite alternate; }
 .blob-1 { width: 300px; height: 300px; background: var(--primary); top: -80px; left: -80px; }
@@ -62,9 +75,6 @@ body {
 .blob-3 { width: 250px; height: 250px; background: #8b5cf6; top: 40%; left: 40%; animation-delay: 4s; opacity: 0.2; }
 @keyframes float { 100% { transform: translate(30px, 50px); } }
 
-/* =========================================
-   4. GLASSMORPHISM & LOGIN
-   ========================================= */
 .glass-panel {
     background: var(--glass); backdrop-filter: blur(16px);
     border: 1px solid var(--glass-border); border-radius: 16px;
@@ -100,7 +110,7 @@ body {
 .error-msg { color: var(--danger); margin-top: 10px; display: none; font-size: 12px; }
 
 /* =========================================
-   5. LAYOUT & SIDEBAR (COMPACTA)
+   4. LAYOUT PADRÃO (DESKTOP)
    ========================================= */
 .app-layout { display: flex; height: 100vh; padding: 8px; gap: 8px; }
 .sidebar { width: 220px; padding: 15px; display: flex; flex-direction: column; }
@@ -119,6 +129,7 @@ body {
 .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.08); color: white; }
 .nav-item.active { border-left: 3px solid var(--primary); background: linear-gradient(90deg, rgba(217, 70, 239, 0.1), transparent); }
 .nav-item i { width: 16px; }
+
 .btn-logout {
     width: 100%; background: rgba(244,63,94,0.1); color: var(--danger);
     border: 1px solid rgba(244,63,94,0.2); padding: 10px; border-radius: 8px;
@@ -134,9 +145,7 @@ body {
 .avatar { width: 32px; height: 32px; background: linear-gradient(var(--secondary), var(--primary)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; }
 .content-scroll { flex: 1; overflow-y: auto; padding: 0 5px 5px 0; }
 
-/* =========================================
-   6. KPI & CHARTS (CORREÇÃO DE TAMANHO)
-   ========================================= */
+/* KPI & CHARTS */
 .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 15px; }
 .kpi-card { padding: 15px; display: flex; align-items: center; gap: 15px; position: relative; overflow: hidden; }
 .kpi-card.gradient-1::before { content:''; position: absolute; top:0; left:0; width:3px; height:100%; background: var(--primary); }
@@ -147,84 +156,41 @@ body {
 .kpi-card span { font-size: 12px; }
 
 .charts-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 10px; }
-
-/* Correção para o gráfico não vazar */
-.chart-box { 
-    padding: 15px; 
-    height: 260px; /* Altura reduzida */
-    display: flex; 
-    flex-direction: column; 
-    overflow: hidden; 
-}
+.chart-box { padding: 15px; height: 260px; display: flex; flex-direction: column; overflow: hidden; }
 .chart-box h4 { font-size: 14px; margin-bottom: 10px; }
+.canvas-wrapper { flex: 1; position: relative; width: 100%; height: 100%; min-height: 0; }
 
-.canvas-wrapper { 
-    flex: 1; 
-    position: relative; 
-    width: 100%;
-    height: 100%;
-    min-height: 0;
-}
-
-/* =========================================
-   7. PDV & INPUTS
-   ========================================= */
+/* PDV */
 .pdv-layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 10px; height: 100%; }
 .pdv-left, .pdv-right { padding: 20px; display: flex; flex-direction: column; }
 .step-box { margin-bottom: 15px; }
 .step-num { display: inline-block; width: 20px; height: 20px; background: var(--primary); color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 11px; margin-right: 8px; }
 .step-box h3 { display: inline-block; font-size: 14px; margin-bottom: 5px; }
 
-.modern-input {
-    width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border);
-    padding: 8px 10px; border-radius: 8px; color: white; margin-top: 3px;
-    font-size: 13px; height: 36px;
-}
+.modern-input { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border); padding: 8px 10px; border-radius: 8px; color: white; margin-top: 3px; font-size: 13px; height: 36px; }
 .modern-input:focus { border-color: var(--primary); outline: none; }
 
 .form-group { display: flex; gap: 8px; }
-.btn-primary {
-    background: var(--secondary); color: white; border: none; padding: 0 15px;
-    border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap;
-    font-size: 13px; height: 36px; margin-top: 3px;
-}
-.btn-icon {
-    background: rgba(255,255,255,0.1); border: none; width: 36px; height: 36px;
-    border-radius: 8px; color: white; cursor: pointer; display: flex; align-items: center;
-    justify-content: center; margin-top: 3px;
-}
+.btn-primary { background: var(--secondary); color: white; border: none; padding: 0 15px; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap; font-size: 13px; height: 36px; margin-top: 3px; }
+.btn-icon { background: rgba(255,255,255,0.1); border: none; width: 36px; height: 36px; border-radius: 8px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-top: 3px; }
 
 .ticket-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .badge { background: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 3px 8px; border-radius: 12px; font-size: 10px; }
-
 .carrinho-list { list-style: none; flex: 1; overflow-y: auto; margin-bottom: 15px; min-height: 80px; }
-.carrinho-list li {
-    background: rgba(255,255,255,0.03); padding: 8px 10px; border-radius: 6px;
-    margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;
-    font-size: 13px;
-}
+.carrinho-list li { background: rgba(255,255,255,0.03); padding: 8px 10px; border-radius: 6px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
 .empty-state { text-align: center; color: var(--text-muted); margin-top: 20px; font-style: italic; font-size: 12px; }
-
 .checkout-area { background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; margin-top: auto; }
 .total-display { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .total-display h2 { color: var(--primary); font-family: var(--font-display); font-size: 24px; }
-
-.btn-checkout {
-    width: 100%; padding: 12px; background: var(--success); border: none;
-    border-radius: 8px; color: white; font-weight: 800; cursor: pointer;
-    box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); transition: 0.3s; font-size: 14px;
-}
+.btn-checkout { width: 100%; padding: 12px; background: var(--success); border: none; border-radius: 8px; color: white; font-weight: 800; cursor: pointer; box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); transition: 0.3s; font-size: 14px; }
 .btn-checkout:hover { transform: scale(1.02); }
 
-/* =========================================
-   8. TABELAS & BOTÕES GERAIS
-   ========================================= */
+/* TABLES */
 .modern-table { width: 100%; border-collapse: separate; border-spacing: 0 5px; }
 .modern-table th { text-align: left; padding: 10px; color: var(--text-muted); font-size: 11px; text-transform: uppercase; }
 .modern-table td { background: rgba(255,255,255,0.03); padding: 10px; font-size: 13px; }
 .modern-table tr td:first-child { border-radius: 8px 0 0 8px; }
 .modern-table tr td:last-child { border-radius: 0 8px 8px 0; }
-
 .search-box { display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); }
 .search-input { background: transparent; border: none; color: white; font-size: 13px; outline: none; width: 180px; }
 .table-header { display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center; }
@@ -235,9 +201,7 @@ body {
 .bg-yellow { background: #f59e0b; color: white; }
 .btn-danger { background: var(--danger); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; }
 
-/* =========================================
-   9. FINANCEIRO CARDS
-   ========================================= */
+/* FINANCEIRO */
 .finance-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 .fin-card { padding: 20px; border-radius: 16px; color: white; position: relative; overflow: hidden; }
 .fin-card h2 { font-size: 24px; font-family: var(--font-display); margin-top: 5px; position: relative; z-index: 2; }
@@ -245,14 +209,8 @@ body {
 .fin-card.expense { background: linear-gradient(135deg, #be123c, #f43f5e); }
 .fin-card.profit { background: linear-gradient(135deg, #4f46e5, #6366f1); }
 
-/* =========================================
-   10. MODAL & UTILS
-   ========================================= */
-.modal-backdrop {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 5000;
-    display: flex; justify-content: center; align-items: center;
-}
+/* MODAIS */
+.modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 5000; display: flex; justify-content: center; align-items: center; }
 .modal-window { width: 500px; padding: 25px; }
 .modal-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
 .close-btn { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
@@ -260,21 +218,98 @@ body {
 .historico-box { max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px; }
 .new-entry { padding-top: 10px; border-top: 1px solid var(--border); }
 
-/* Utils */
+/* UTILS */
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .mt-10 { margin-top: 10px; } .mt-15 { margin-top: 15px; } .mb-10 { margin-bottom: 10px; }
 .full-width { width: 100%; }
 .divider { height: 1px; background: var(--border); margin: 15px 0; }
 .simple-list { max-height: 180px; overflow-y: auto; }
-
 .fade-in { animation: fadeIn 0.4s ease-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-@media (max-width: 768px) {
-    .app-layout { flex-direction: column; overflow-y: auto; height: auto; }
-    .sidebar { width: 100%; height: auto; margin-bottom: 5px; padding: 10px; }
-    .charts-grid, .pdv-layout, .finance-cards { grid-template-columns: 1fr; }
-    .main-content { overflow: visible; padding-bottom: 20px; }
-    .search-input { width: 120px; }
-    .kpi-card h3 { font-size: 20px; }
+/* =========================================
+   5. MODO CELULAR (LÓGICA AUTOMÁTICA)
+   ========================================= */
+.mobile-bottom-nav { display: none; } /* Default: invisível */
+.mobile-logout-icon { display: none; }
+
+/* Só ativa se a classe estiver no body */
+body.mobile-mode .app-layout { 
+    flex-direction: column; 
+    padding: 0; 
+    gap: 0; 
+    height: 100vh;
+    overflow: hidden;
+}
+
+body.mobile-mode .sidebar { display: none !important; } /* Esconde sidebar original */
+
+body.mobile-mode .main-content {
+    height: calc(100vh - 70px); /* Tira altura da nav inferior */
+    padding-bottom: 80px;
+    overflow-y: auto;
+}
+
+body.mobile-mode .top-header {
+    border-radius: 0 0 15px 15px;
+    margin-bottom: 10px;
+}
+
+body.mobile-mode .content-scroll {
+    padding: 10px;
+    overflow: visible; 
+}
+
+/* Nav Inferior Fixa */
+body.mobile-mode .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0; left: 0; width: 100%;
+    height: 70px;
+    background: rgba(10, 10, 12, 0.95);
+    backdrop-filter: blur(15px);
+    border-top: 1px solid var(--border);
+    justify-content: space-around;
+    align-items: center;
+    z-index: 9000;
+    padding-bottom: 10px; /* Safe area para iPhone */
+}
+
+body.mobile-mode .mobile-nav-item {
+    display: flex; flex-direction: column; align-items: center;
+    color: var(--text-muted); font-size: 10px; gap: 4px;
+    text-decoration: none; padding: 5px; cursor: pointer;
+}
+
+body.mobile-mode .mobile-nav-item.active { color: var(--primary); }
+body.mobile-mode .mobile-nav-item i { width: 22px; height: 22px; }
+
+/* Ajustes de Grids para virar 1 coluna só */
+body.mobile-mode .kpi-grid, 
+body.mobile-mode .charts-grid,
+body.mobile-mode .pdv-layout,
+body.mobile-mode .finance-cards,
+body.mobile-mode .grid-2 {
+    grid-template-columns: 1fr;
+}
+
+body.mobile-mode .pdv-left { padding: 15px; order: 1; }
+body.mobile-mode .pdv-right { padding: 15px; order: 2; margin-bottom: 80px; }
+
+body.mobile-mode .search-box { width: 100%; }
+body.mobile-mode .search-input { width: 100%; }
+body.mobile-mode .table-responsive { overflow-x: auto; }
+
+/* Modal em tela cheia no mobile */
+body.mobile-mode .modal-window { width: 95%; margin: 10px; max-height: 90vh; overflow-y: auto; }
+
+/* Botão Sair no Header Mobile */
+body.mobile-mode .mobile-logout-icon { display: block; margin-left: 10px; color: var(--danger); cursor: pointer; }
+
+/* Inputs maiores para dedo */
+body.mobile-mode .modern-input, 
+body.mobile-mode .btn-primary, 
+body.mobile-mode .btn-checkout {
+    height: 45px;
+    font-size: 14px;
 }
