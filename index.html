@@ -310,6 +310,18 @@
                 </section>
 
                 <section id="financeiro" class="aba fade-in" style="display:none">
+                    <div class="glass-panel mb-15" style="border: 1px solid rgba(255,255,255,0.1);">
+                        <h4 style="margin-bottom: 10px; color: var(--text-muted);">Acesso Rápido</h4>
+                        <div class="grid-2">
+                            <button onclick="abrirAba('despesas')" class="btn-danger full-width" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                                <i data-lucide="receipt" style="width:16px"></i> Lançar Despesa
+                            </button>
+                            <button onclick="abrirAba('servicos')" class="btn-primary full-width" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                                <i data-lucide="scissors" style="width:16px"></i> Editar Serviços
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="finance-cards">
                         <div class="fin-card income">
                             <span>Entradas (Mês)</span>
@@ -347,6 +359,7 @@
                         </div>
                     </div>
                     <div id="lista-servicos-cad" class="grid-cards mt-15"></div>
+                    <button onclick="abrirAba('financeiro')" class="btn-small mt-15 mobile-only" style="width:100%; opacity:0.7">Voltar ao Menu</button>
                 </section>
 
                 <section id="despesas" class="aba fade-in" style="display:none">
@@ -379,6 +392,7 @@
                             </table>
                         </div>
                     </div>
+                    <button onclick="abrirAba('financeiro')" class="btn-small mt-15 mobile-only" style="width:100%; opacity:0.7">Voltar ao Menu</button>
                 </section>
 
             </div>
