@@ -34,7 +34,7 @@ let idAtendimentoEdicao = null;
 let clienteAnamneseAtual = null;
 
 // ==========================================
-// 2. LÓGICA DE SELEÇÃO DE DISPOSITIVO (NOVO)
+// 2. LÓGICA DE SELEÇÃO DE DISPOSITIVO
 // ==========================================
 function escolherDispositivo(tipo) {
     const overlay = document.getElementById('device-selection');
@@ -51,7 +51,7 @@ function escolherDispositivo(tipo) {
     setTimeout(() => {
         overlay.style.display = 'none';
         
-        // Verifica se precisa logar. Se não estiver logado, mostra o login.
+        // Verifica se precisa logar
         if (!auth.currentUser) {
             document.getElementById('login-overlay').style.display = 'flex';
         }
@@ -76,7 +76,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 setTimeout(() => loader.style.display = 'none', 500);
             }
             
-            // Só esconde o login overlay se a seleção de dispositivo JÁ tiver sido feita
             const deviceOverlay = document.getElementById('device-selection');
             if (deviceOverlay.style.display === 'none') {
                 document.getElementById("login-overlay").style.display = 'none';
@@ -84,8 +83,6 @@ document.addEventListener("DOMContentLoaded", () => {
             
             inicializarSistema();
         } else {
-            // Se não estiver logado, não mostramos o login imediatamente.
-            // Esperamos a pessoa escolher o dispositivo primeiro.
             if(loader) {
                 loader.style.opacity = '0';
                 setTimeout(() => loader.style.display = 'none', 500);
@@ -134,6 +131,32 @@ function logout() {
     });
 }
 
+// --- FUNÇÃO PARA ZERAR DADOS DE TESTE ---
+// --- FUNÇÃO PARA ZERAR DADOS (COM SENHA DUPLA) ---
+function resetarSistema() {
+    // 1ª Tentativa
+    const senha1 = prompt("⚠️ PERIGO EXTREMO: Você está prestes a apagar TODOS os dados do sistema (Clientes, Vendas, Financeiro).\n\nSe isso for um erro, cancele agora.\n\nPara continuar, digite a senha de segurança:");
+
+    if (senha1 === "Stephanye13!") {
+        // 2ª Tentativa (Confirmação)
+        const senha2 = prompt("⚠️ ÚLTIMA CHANCE: Tem certeza absoluta?\n\nEssa ação NÃO pode ser desfeita.\n\nDigite a senha novamente para CONFIRMAR A EXCLUSÃO:");
+
+        if (senha2 === "Stephanye13!") {
+            // Ação Real
+            db.ref('/').set(null)
+              .then(() => {
+                  alert("♻️ Sistema resetado com sucesso! Todos os dados foram apagados.");
+                  location.reload();
+              })
+              .catch(erro => alert("Erro ao limpar: " + erro.message));
+        } else {
+            if (senha2 !== null) alert("❌ Segunda senha incorreta. Operação cancelada. Nada foi apagado.");
+        }
+    } else {
+        if (senha1 !== null) alert("❌ Senha incorreta. Nada foi apagado.");
+    }
+}
+
 function inicializarSistema() {
     console.log("Sistema Iniciado");
     
@@ -168,32 +191,26 @@ function inicializarSistema() {
 }
 
 // ==========================================
-// 4. NAVEGAÇÃO E UI (ATUALIZADA P/ MOBILE)
+// 4. NAVEGAÇÃO E UI
 // ==========================================
 function abrirAba(idAba) {
-    // Esconde todas as abas
     document.querySelectorAll('.aba').forEach(el => {
         el.style.display = 'none';
         el.classList.remove('fade-in');
     });
     
-    // Remove classe 'active' da Sidebar (Desktop)
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    // Remove classe 'active' da Bottom Nav (Mobile)
     document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
     
-    // Mostra a aba certa
     const aba = document.getElementById(idAba);
     if(aba) {
         aba.style.display = 'block';
         setTimeout(() => aba.classList.add('fade-in'), 10);
     }
     
-    // Ativa botão na Sidebar (Desktop)
     const btnMenu = document.querySelector(`.nav-item[onclick*="${idAba}"]`);
     if(btnMenu) btnMenu.classList.add('active');
 
-    // Ativa botão na Bottom Nav (Mobile)
     const btnMobile = document.querySelector(`.mobile-nav-item[onclick*="${idAba}"]`);
     if(btnMobile) btnMobile.classList.add('active');
 
@@ -224,7 +241,6 @@ function dispararToast(msg, tipo = 'success') {
     el.style.boxShadow = "0 10px 30px rgba(0,0,0,0.5)";
     
     container.style.position = 'fixed';
-    // Se for mobile, o toast aparece mais alto por causa do menu
     if (document.body.classList.contains('mobile-mode')) {
         container.style.bottom = '80px'; 
     } else {
@@ -458,18 +474,34 @@ function renderTabelaClientes() {
     tbody.innerHTML = store.clientes.map(c => {
         const telefoneClean = c.telefone ? c.telefone.replace(/\D/g, '') : '';
         const linkZap = telefoneClean ? `https://wa.me/55${telefoneClean}?text=Olá ${c.nome}, Cassia Nunes passando para confirmar seu horário!` : '#';
+        
         return `<tr>
             <td><strong>${c.nome}</strong><br><span style="font-size:12px; opacity:0.7">${c.telefone || 'Sem telefone'}</span></td>
             <td><span class="badge" style="background:#22c55e20; color:#22c55e">ATIVO</span></td>
             <td>${c.ultimaVisita ? formatarData(c.ultimaVisita) : '-'}</td>
             <td>${c.previsaoRetorno ? formatarData(c.previsaoRetorno) : '-'}</td>
             <td>
-                <button class="btn-small bg-purple" onclick="abrirModalAnamnese(${c.id})"><i data-lucide="clipboard-list"></i></button>
-                ${telefoneClean ? `<a href="${linkZap}" target="_blank"><button class="btn-small bg-green"><i data-lucide="message-circle"></i></button></a>` : ''}
+                <button class="btn-small bg-purple" onclick="abrirModalAnamnese(${c.id})" title="Histórico">
+                    <i data-lucide="clipboard-list" style="width:16px; height:16px;"></i>
+                </button>
+                
+                ${telefoneClean ? `<a href="${linkZap}" target="_blank"><button class="btn-small bg-green" title="WhatsApp"><i data-lucide="message-circle" style="width:16px; height:16px;"></i></button></a>` : ''}
+                
+                <button class="btn-small" onclick="excluirCliente(${c.id})" title="Excluir Cliente" style="background: var(--danger); color: white;">
+                    <i data-lucide="trash-2" style="width:16px; height:16px;"></i>
+                </button>
             </td>
         </tr>`
     }).join("");
     lucide.createIcons();
+}
+
+function excluirCliente(id) {
+    if(confirm("Tem certeza que deseja excluir este cliente? O histórico será perdido.")) {
+        db.ref(`clientes/${id}`).remove()
+          .then(() => dispararToast("Cliente removido!", "error"))
+          .catch(e => dispararToast("Erro ao excluir", "error"));
+    }
 }
 
 function filtrarRetornosDashboard() {
