@@ -872,3 +872,16 @@ function formatarData(dataISO) {
     const [ano, mes, dia] = dataISO.split("-");
     return `${dia}/${mes}/${ano}`;
 }
+
+// ==========================================
+// 10. MÁSCARAS DE INPUT (UX)
+// ==========================================
+document.addEventListener('input', function (e) {
+    const target = e.target;
+
+    // Máscara de Telefone (id contém 'tel')
+    if (target.id.includes('tel')) {
+        let x = target.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,5})(\d{0,4})/);
+        target.value = !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : '');
+    }
+});
