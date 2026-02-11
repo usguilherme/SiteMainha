@@ -10,6 +10,7 @@
     
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script> 
     
     <link rel="stylesheet" href="style.css">
 </head>
@@ -106,6 +107,12 @@
             </nav>
 
             <div class="sidebar-footer">
+                <button onclick="abrirModalConfig()" class="btn-backup" title="Configurar Pix e Dados" style="margin-bottom: 5px;">
+                    <i data-lucide="settings"></i> Configurações
+                </button>
+                <button onclick="fazerBackup()" class="btn-backup" title="Baixar cópia dos dados">
+                    <i data-lucide="download-cloud"></i> Backup
+                </button>
                 <div style="font-size:10px; color:rgba(255,255,255,0.3); margin-bottom:8px; text-align:center" id="user-email-display"></div>
                 <button onclick="logout()" class="btn-logout">
                     <i data-lucide="log-out"></i> Sair
@@ -154,10 +161,10 @@
                             </div>
                         </div>
                         <div class="kpi-card glass-panel">
-                            <div class="icon-box info"><i data-lucide="users"></i></div>
+                            <div class="icon-box info"><i data-lucide="award"></i></div>
                             <div>
-                                <span>Ticket Médio</span>
-                                <h3 id="dash-ticket">R$ 0,00</h3>
+                                <span>Pontos Distribúidos</span>
+                                <h3 id="dash-pontos">0</h3>
                             </div>
                         </div>
                     </div>
@@ -276,6 +283,14 @@
                                     </div>
                                 </div>
 
+                                <div id="area-pix" class="pix-box" style="display:none; text-align:center; margin-bottom:10px;">
+                                    <div id="qrcode-container" style="background:white; padding:10px; border-radius:8px; display:inline-block; margin-bottom:5px;">
+                                        <canvas id="qr-pix"></canvas>
+                                    </div>
+                                    <input type="text" id="pix-copia-cola" class="modern-input" readonly onclick="this.select()" style="font-size:10px;">
+                                    <button onclick="copiarPix()" class="btn-small bg-green full-width mt-10">Copiar Código Pix</button>
+                                </div>
+
                                 <button onclick="finalizarVenda()" class="btn-checkout">FINALIZAR</button>
                             </div>
                         </div>
@@ -296,7 +311,7 @@
                                 <thead>
                                     <tr>
                                         <th>Cliente</th>
-                                        <th>Status</th>
+                                        <th>Fidelidade</th>
                                         <th>Última Visita</th>
                                         <th>Próximo Retorno</th>
                                         <th>Ações</th>
@@ -319,6 +334,9 @@
                                 <i data-lucide="scissors" style="width:16px"></i> Editar Serviços
                             </button>
                         </div>
+                        <button onclick="fazerBackup()" class="btn-small mt-15 full-width" style="background: #334155;">
+                            <i data-lucide="download"></i> Exportar Todos os Dados (Backup)
+                        </button>
                     </div>
 
                     <div class="finance-cards">
@@ -424,12 +442,29 @@
             </div>
             <div class="modal-body">
                 <h2 id="anamnese-cliente-nome" class="text-gradient">Cliente</h2>
-                <div id="historico-lista" class="historico-box"></div>
-                <div class="new-entry">
-                    <label class="label-small">Novo Registro Técnico</label>
-                    <input type="text" id="anam-titulo" placeholder="Procedimento" class="modern-input">
-                    <textarea id="anam-obs" placeholder="Detalhes (Cor, Marca, Reação...)" class="modern-input"></textarea>
-                    <button onclick="salvarAnamnese()" class="btn-glow full-width mt-10">SALVAR HISTÓRICO</button>
+                <div class="tab-controls">
+                    <button class="tab-btn active" onclick="trocarAbaAnamnese('historico')">Histórico</button>
+                    <button class="tab-btn" onclick="trocarAbaAnamnese('galeria')">Galeria (Antes/Depois)</button>
+                </div>
+                
+                <div id="tab-historico">
+                    <div id="historico-lista" class="historico-box"></div>
+                    <div class="new-entry">
+                        <label class="label-small">Novo Registro Técnico</label>
+                        <input type="text" id="anam-titulo" placeholder="Procedimento" class="modern-input">
+                        <textarea id="anam-obs" placeholder="Detalhes (Cor, Marca, Reação...)" class="modern-input"></textarea>
+                        <button onclick="salvarAnamnese()" class="btn-glow full-width mt-10">SALVAR HISTÓRICO</button>
+                    </div>
+                </div>
+
+                <div id="tab-galeria" style="display:none">
+                    <div id="galeria-grid" class="gallery-grid"></div>
+                    <div class="new-entry">
+                        <label class="label-small">Adicionar Foto (Antes/Depois)</label>
+                        <input type="file" id="input-foto-galeria" accept="image/*" class="modern-input">
+                        <input type="text" id="desc-foto-galeria" placeholder="Descrição (Ex: Antes do Corte)" class="modern-input mt-10">
+                        <button onclick="salvarFotoGaleria()" class="btn-glow full-width mt-10">SALVAR FOTO</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -450,15 +485,46 @@
                 
                 <label class="label-small">Data de Nascimento (Opcional)</label>
                 <input type="date" id="novo-cli-nasc" class="modern-input">
+
+                <label class="label-small">Foto de Perfil (Opcional)</label>
+                <input type="file" id="novo-cli-foto" accept="image/*" class="modern-input">
                 
                 <button onclick="salvarNovoClienteModal()" class="btn-glow full-width mt-15">CADASTRAR</button>
             </div>
         </div>
     </div>
 
-    <div id="toast-container"></div>
-    <div id="cupom-print"></div>
+    <div id="modal-config" class="modal-backdrop" style="display:none">
+        <div class="glass-card modal-window">
+            <div class="modal-header">
+                <h3>⚙️ Configurações do Sistema</h3>
+                <button onclick="fecharModal('modal-config')" class="close-btn">×</button>
+            </div>
+            <div class="modal-body">
+                <h4 style="color: var(--primary); margin-bottom: 10px;">Dados para Recebimento (Pix)</h4>
+                
+                <label class="label-small">Chave Pix (CPF, Email, Celular ou Aleatória)</label>
+                <input type="text" id="cfg-chave-pix" class="modern-input" placeholder="Ex: 123.456.789-00">
+                
+                <label class="label-small">Nome do Beneficiário (Como no Banco)</label>
+                <input type="text" id="cfg-nome-pix" class="modern-input" placeholder="Ex: Cassia Nunes">
+                
+                <label class="label-small">Cidade do Beneficiário</label>
+                <input type="text" id="cfg-cidade-pix" class="modern-input" placeholder="Ex: Campina Grande">
+                
+                <div class="divider"></div>
 
+                <h4 style="color: var(--warning); margin-bottom: 10px;">Metas</h4>
+                <label class="label-small">Meta de Faturamento Mensal (R$)</label>
+                <input type="number" id="cfg-meta-mensal" class="modern-input" placeholder="Ex: 5000.00">
+
+                <button onclick="salvarConfiguracoes()" class="btn-glow full-width mt-15">SALVAR CONFIGURAÇÕES</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
