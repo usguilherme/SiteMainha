@@ -135,6 +135,14 @@ body {
     border: 1px solid rgba(244,63,94,0.2); padding: 10px; border-radius: 8px;
     cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px;
 }
+/* Estilo do Botão de Backup */
+.btn-backup {
+    width: 100%; background: rgba(255,255,255,0.05); color: var(--text-muted);
+    border: 1px solid var(--border); padding: 8px; border-radius: 8px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; margin-bottom: 10px; transition: 0.3s;
+}
+.btn-backup:hover { background: rgba(255,255,255,0.1); color: white; }
+
 
 .main-content { flex: 1; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
 .top-header { height: 60px; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; }
@@ -142,7 +150,7 @@ body {
 .user-profile { display: flex; align-items: center; gap: 10px; }
 .notification-btn { position: relative; width: 32px; height: 32px; background: rgba(255,255,255,0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .dot { position: absolute; top: 8px; right: 8px; width: 5px; height: 5px; background: var(--danger); border-radius: 50%; }
-.avatar { width: 32px; height: 32px; background: linear-gradient(var(--secondary), var(--primary)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; }
+.avatar { width: 32px; height: 32px; background: linear-gradient(var(--secondary), var(--primary)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; background-size: cover; background-position: center; }
 .content-scroll { flex: 1; overflow-y: auto; padding: 0 5px 5px 0; }
 
 /* KPI & CHARTS */
@@ -152,6 +160,7 @@ body {
 .icon-box { width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--primary); }
 .icon-box i { width: 20px; height: 20px; }
 .icon-box.warning { color: var(--warning); }
+.icon-box.info { color: #60a5fa; } /* Azul para Pontos */
 .kpi-card h3 { font-size: 22px; font-family: var(--font-display); margin-top: 2px; }
 .kpi-card span { font-size: 12px; }
 
@@ -169,6 +178,8 @@ body {
 
 .modern-input { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border); padding: 8px 10px; border-radius: 8px; color: white; margin-top: 3px; font-size: 13px; height: 36px; }
 .modern-input:focus { border-color: var(--primary); outline: none; }
+/* Ajuste para input file ficar bonito */
+input[type="file"] { padding-top: 8px; cursor: pointer; }
 
 .form-group { display: flex; gap: 8px; }
 .btn-primary { background: var(--secondary); color: white; border: none; padding: 0 15px; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap; font-size: 13px; height: 36px; margin-top: 3px; }
@@ -217,6 +228,17 @@ body {
 .text-gradient { background: linear-gradient(to right, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .historico-box { max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px; }
 .new-entry { padding-top: 10px; border-top: 1px solid var(--border); }
+
+/* --- NOVAS CLASSES PARA GALERIA E ABAS --- */
+.tab-controls { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+.tab-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-weight: 600; padding: 5px; transition: 0.3s; }
+.tab-btn.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
+
+.gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-height: 250px; overflow-y: auto; margin-bottom: 10px; }
+.gallery-item { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: #222; cursor: pointer; }
+.gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+.gallery-item:hover img { transform: scale(1.05); }
+.gallery-caption { position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.7); font-size: 10px; padding: 4px; text-align: center; color: white; backdrop-filter: blur(2px); }
 
 /* UTILS */
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
