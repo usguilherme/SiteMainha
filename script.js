@@ -1,6 +1,14 @@
 // ==========================================
-// 1. CONFIGURAÇÃO FIREBASE
+// 1. CONFIGURAÇÃO GERAL
 // ==========================================
+// Variáveis de configuração que serão carregadas do Firebase
+let configSistema = {
+    chavePix: "",
+    nomePix: "",
+    cidadePix: "",
+    metaMensal: 0
+};
+
 const firebaseConfig = {
   apiKey: "AIzaSyCpNsnwOVDLSZfXn-g6SE1V69BXHs8cYEc",
   authDomain: "mainhasite.firebaseapp.com",
@@ -38,20 +46,13 @@ let clienteAnamneseAtual = null;
 // ==========================================
 function escolherDispositivo(tipo) {
     const overlay = document.getElementById('device-selection');
-    
-    // Se escolher mobile, adiciona a classe mágica ao corpo do site
     if (tipo === 'mobile') {
         document.body.classList.add('mobile-mode');
-        // Pequeno delay para redesenhar ícones no novo layout
         setTimeout(() => lucide.createIcons(), 100);
     }
-    
-    // Esconde a tela de seleção
     overlay.style.opacity = '0';
     setTimeout(() => {
         overlay.style.display = 'none';
-        
-        // Verifica se precisa logar
         if (!auth.currentUser) {
             document.getElementById('login-overlay').style.display = 'flex';
         }
@@ -75,12 +76,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 loader.style.opacity = '0';
                 setTimeout(() => loader.style.display = 'none', 500);
             }
-            
             const deviceOverlay = document.getElementById('device-selection');
             if (deviceOverlay.style.display === 'none') {
                 document.getElementById("login-overlay").style.display = 'none';
             }
-            
             inicializarSistema();
         } else {
             if(loader) {
@@ -106,7 +105,6 @@ function verificarSenha() {
         erro.innerText = "Preencha e-mail e senha";
         return;
     }
-
     btn.innerText = "CONECTANDO...";
     
     auth.signInWithEmailAndPassword(email, senha)
@@ -116,11 +114,8 @@ function verificarSenha() {
             document.getElementById("login-overlay").style.display = 'none';
         })
         .catch((error) => {
-            console.error("Erro Login:", error.code);
             erro.style.display = "block";
-            if(error.code === 'auth/user-not-found') erro.innerText = "E-mail não encontrado.";
-            else if(error.code === 'auth/wrong-password') erro.innerText = "Senha incorreta.";
-            else erro.innerText = "Erro ao acessar.";
+            erro.innerText = "Erro ao acessar.";
             btn.innerText = "ENTRAR";
         });
 }
@@ -131,34 +126,42 @@ function logout() {
     });
 }
 
-// --- FUNÇÃO PARA ZERAR DADOS DE TESTE ---
-// --- FUNÇÃO PARA ZERAR DADOS (COM SENHA DUPLA) ---
 function resetarSistema() {
-    // 1ª Tentativa
-    const senha1 = prompt("⚠️ PERIGO EXTREMO: Você está prestes a apagar TODOS os dados do sistema (Clientes, Vendas, Financeiro).\n\nSe isso for um erro, cancele agora.\n\nPara continuar, digite a senha de segurança:");
-
+    const senha1 = prompt("⚠️ PERIGO: Apagar TODOS os dados? Digite a senha:");
     if (senha1 === "Stephanye13!") {
-        // 2ª Tentativa (Confirmação)
-        const senha2 = prompt("⚠️ ÚLTIMA CHANCE: Tem certeza absoluta?\n\nEssa ação NÃO pode ser desfeita.\n\nDigite a senha novamente para CONFIRMAR A EXCLUSÃO:");
-
+        const senha2 = prompt("⚠️ CONFIRME: Digite a senha novamente:");
         if (senha2 === "Stephanye13!") {
-            // Ação Real
             db.ref('/').set(null)
               .then(() => {
-                  alert("♻️ Sistema resetado com sucesso! Todos os dados foram apagados.");
+                  alert("♻️ Sistema resetado!");
                   location.reload();
-              })
-              .catch(erro => alert("Erro ao limpar: " + erro.message));
-        } else {
-            if (senha2 !== null) alert("❌ Segunda senha incorreta. Operação cancelada. Nada foi apagado.");
+              });
         }
-    } else {
-        if (senha1 !== null) alert("❌ Senha incorreta. Nada foi apagado.");
     }
+}
+
+function fazerBackup() {
+    const dados = JSON.stringify(store);
+    const blob = new Blob([dados], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `backup_cassia_nunes_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    dispararToast("Backup baixado com sucesso!");
 }
 
 function inicializarSistema() {
     console.log("Sistema Iniciado");
+    
+    // CARREGAR CONFIGURAÇÕES (Pix, Meta, etc)
+    db.ref('config').on('value', snap => {
+        if(snap.val()) {
+            configSistema = snap.val();
+        }
+    });
     
     db.ref('servicos').on('value', snap => {
         store.servicos = snap.val() ? Object.values(snap.val()) : [];
@@ -191,14 +194,45 @@ function inicializarSistema() {
 }
 
 // ==========================================
-// 4. NAVEGAÇÃO E UI
+// 4. CONFIGURAÇÕES & MODAL
+// ==========================================
+function abrirModalConfig() {
+    // Preenche os campos com os dados atuais
+    document.getElementById("cfg-chave-pix").value = configSistema.chavePix || "";
+    document.getElementById("cfg-nome-pix").value = configSistema.nomePix || "";
+    document.getElementById("cfg-cidade-pix").value = configSistema.cidadePix || "";
+    document.getElementById("cfg-meta-mensal").value = configSistema.metaMensal || "";
+    
+    document.getElementById("modal-config").style.display = 'flex';
+}
+
+function salvarConfiguracoes() {
+    const novaConfig = {
+        chavePix: document.getElementById("cfg-chave-pix").value,
+        nomePix: document.getElementById("cfg-nome-pix").value,
+        cidadePix: document.getElementById("cfg-cidade-pix").value,
+        metaMensal: parseFloat(document.getElementById("cfg-meta-mensal").value) || 0
+    };
+
+    // Salva no Firebase no nó 'config'
+    db.ref('config').set(novaConfig)
+        .then(() => {
+            configSistema = novaConfig;
+            dispararToast("⚙️ Configurações salvas!");
+            fecharModal('modal-config');
+            atualizarKPIs(); // Para atualizar a meta se tiver mudado
+        })
+        .catch(erro => alert("Erro ao salvar: " + erro.message));
+}
+
+// ==========================================
+// 5. NAVEGAÇÃO E UI
 // ==========================================
 function abrirAba(idAba) {
     document.querySelectorAll('.aba').forEach(el => {
         el.style.display = 'none';
         el.classList.remove('fade-in');
     });
-    
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
     
@@ -207,24 +241,11 @@ function abrirAba(idAba) {
         aba.style.display = 'block';
         setTimeout(() => aba.classList.add('fade-in'), 10);
     }
-    
     const btnMenu = document.querySelector(`.nav-item[onclick*="${idAba}"]`);
     if(btnMenu) btnMenu.classList.add('active');
-
     const btnMobile = document.querySelector(`.mobile-nav-item[onclick*="${idAba}"]`);
     if(btnMobile) btnMobile.classList.add('active');
-
-    const titulos = {
-        'dashboard': 'Visão Geral',
-        'novo_atendimento': 'Ponto de Venda',
-        'clientes': 'Carteira de Clientes',
-        'financeiro': 'Fluxo de Caixa',
-        'agenda': 'Agenda Diária',
-        'servicos': 'Catálogo',
-        'despesas': 'Gestão de Despesas'
-    };
-    const tituloEl = document.getElementById('titulo-pagina');
-    if(tituloEl) tituloEl.innerText = titulos[idAba] || 'Cassia Nunes';
+    
     lucide.createIcons();
 }
 
@@ -254,7 +275,7 @@ function dispararToast(msg, tipo = 'success') {
 }
 
 // ==========================================
-// 5. MÓDULO: PDV
+// 6. MÓDULO: PDV & PIX
 // ==========================================
 function renderServicosPDV() {
     const sel = document.getElementById("pdv-servico");
@@ -287,9 +308,7 @@ function renderCarrinho() {
     if(store.carrinho.length === 0) {
         lista.innerHTML = '<li class="empty-state">Carrinho vazio...</li>';
         document.getElementById("pdv-total").innerText = "R$ 0,00";
-        if(document.getElementById("pdv-troco-display")) {
-             document.getElementById("pdv-troco-display").innerText = "R$ 0,00";
-        }
+        if(document.getElementById("pdv-troco-display")) document.getElementById("pdv-troco-display").innerText = "R$ 0,00";
         return;
     }
 
@@ -306,8 +325,11 @@ function renderCarrinho() {
     
     lucide.createIcons();
     document.getElementById("pdv-total").innerText = `R$ ${total.toFixed(2)}`;
-
-    if(document.getElementById("pdv-pagamento").value === "Dinheiro") {
+    
+    // Atualiza PIX se estiver selecionado
+    if(document.getElementById("pdv-pagamento").value === "Pix") {
+        gerarPix(total);
+    } else if(document.getElementById("pdv-pagamento").value === "Dinheiro") {
         calcularTroco();
     }
 }
@@ -333,14 +355,18 @@ function calcularDataRetorno() {
 
 function toggleTroco() {
     const tipo = document.getElementById("pdv-pagamento").value;
-    const area = document.getElementById("area-troco");
-    if(!area) return;
+    const areaTroco = document.getElementById("area-troco");
+    const areaPix = document.getElementById("area-pix");
+    
+    areaTroco.style.display = "none";
+    areaPix.style.display = "none";
+    
     if(tipo === "Dinheiro") {
-        area.style.display = "block";
-    } else {
-        area.style.display = "none";
-        document.getElementById("pdv-valor-pago").value = "";
-        document.getElementById("pdv-troco-display").innerText = "R$ 0,00";
+        areaTroco.style.display = "block";
+    } else if (tipo === "Pix") {
+        areaPix.style.display = "block";
+        const total = store.carrinho.reduce((acc, i) => acc + parseFloat(i.preco), 0);
+        if(total > 0) gerarPix(total);
     }
 }
 
@@ -359,6 +385,39 @@ function calcularTroco() {
     }
 }
 
+// === LÓGICA DE GERAÇÃO PIX ESTÁTICO ===
+function gerarPix(valor) {
+    // Verifica se a mãe cadastrou a chave
+    if(!configSistema.chavePix || !configSistema.nomePix) {
+        // Se estiver vazio, não gera o QR code e avisa (opcionalmente)
+        // Aqui apenas limpamos ou mostramos aviso simples
+        document.getElementById("pix-copia-cola").value = "Configure a Chave Pix nas Configurações!";
+        return;
+    }
+
+    const chave = configSistema.chavePix;
+    const nome = configSistema.nomePix;
+    const cidade = configSistema.cidadePix || "Brasil"; // Cidade padrão se não tiver
+
+    // Formato Pix Copia e Cola usando as variáveis do banco
+    const payload = `00020126330014BR.GOV.BCB.PIX0114${chave}520400005303986540${valor.toFixed(2).length + 2}${valor.toFixed(2)}5802BR59${nome.length < 10 ? '0' + nome.length : nome.length}${nome}60${cidade.length < 10 ? '0' + cidade.length : cidade.length}${cidade}62070503***6304`;
+    
+    const qr = new QRious({
+        element: document.getElementById('qr-pix'),
+        value: payload, 
+        size: 150
+    });
+    
+    document.getElementById("pix-copia-cola").value = `Chave: ${chave} | Valor: R$ ${valor.toFixed(2)}`;
+}
+
+function copiarPix() {
+    const input = document.getElementById("pix-copia-cola");
+    input.select();
+    document.execCommand("copy");
+    dispararToast("Chave Pix copiada!");
+}
+
 function finalizarVenda() {
     if(store.carrinho.length === 0) return dispararToast("Carrinho vazio!", "error");
 
@@ -369,15 +428,16 @@ function finalizarVenda() {
     const total = store.carrinho.reduce((acc, i) => acc + parseFloat(i.preco), 0);
 
     let nomeCliente = "Cliente Avulso";
+    let pontosGanhos = Math.floor(total); // 1 real = 1 ponto
+
     if(idCliente) {
         const c = store.clientes.find(x => x.id == idCliente);
         if(c) nomeCliente = c.nome;
     }
 
     const id = idAtendimentoEdicao || Date.now();
-
     const atendimento = {
-        id: id,
+        id,
         data: new Date().toISOString().split('T')[0],
         hora: new Date().toLocaleTimeString('pt-BR').substr(0,5),
         timestamp: Date.now(),
@@ -397,6 +457,13 @@ function finalizarVenda() {
     } else {
         db.ref(`atendimentos/${id}`).set(atendimento);
         dispararToast("✅ Venda Finalizada!");
+        
+        // Atualiza FIDELIDADE
+        if(idCliente) {
+            db.ref(`clientes/${idCliente}/pontos`).transaction((pontosAtuais) => {
+                return (pontosAtuais || 0) + pontosGanhos;
+            });
+        }
     }
 
     if(idCliente) {
@@ -408,24 +475,18 @@ function finalizarVenda() {
     store.carrinho = [];
     document.getElementById("pdv-obs").value = "";
     document.getElementById("pdv-retorno").value = "";
-    const diasInput = document.getElementById("pdv-dias-retorno");
-    if(diasInput) diasInput.value = "";
-    const valorPagoInput = document.getElementById("pdv-valor-pago");
-    if(valorPagoInput) valorPagoInput.value = "";
     document.getElementById("pdv-cliente").value = "";
-    
     toggleTroco();
     renderCarrinho();
 }
 
 // ==========================================
-// 6. MÓDULO: AGENDA
+// 7. AGENDA
 // ==========================================
 function renderAgenda() {
     const div = document.getElementById("lista-agenda");
     const hoje = new Date().toISOString().split('T')[0];
     const agendaHoje = store.atendimentos.filter(a => a.data === hoje).sort((a,b) => b.timestamp - a.timestamp);
-
     const dateDisplay = document.getElementById("agenda-data-display");
     if(dateDisplay) dateDisplay.innerText = new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'numeric'});
 
@@ -466,7 +527,7 @@ function editarAtendimento(id) {
 }
 
 // ==========================================
-// 7. CLIENTES & FINANCEIRO
+// 8. CLIENTES & GALERIA
 // ==========================================
 function renderTabelaClientes() {
     const tbody = document.getElementById("tabela-clientes");
@@ -476,18 +537,22 @@ function renderTabelaClientes() {
         const linkZap = telefoneClean ? `https://wa.me/55${telefoneClean}?text=Olá ${c.nome}, Cassia Nunes passando para confirmar seu horário!` : '#';
         
         return `<tr>
-            <td><strong>${c.nome}</strong><br><span style="font-size:12px; opacity:0.7">${c.telefone || 'Sem telefone'}</span></td>
-            <td><span class="badge" style="background:#22c55e20; color:#22c55e">ATIVO</span></td>
+            <td style="display:flex; align-items:center; gap:10px">
+                <div class="avatar" style="background-image:url('${c.foto || ''}'); background-size:cover;">${c.foto ? '' : c.nome[0]}</div>
+                <div>
+                    <strong>${c.nome}</strong><br>
+                    <span style="font-size:12px; opacity:0.7">${c.telefone || 'Sem telefone'}</span>
+                </div>
+            </td>
+            <td><span class="badge" style="background:#d946ef20; color:#d946ef">💎 ${c.pontos || 0} pts</span></td>
             <td>${c.ultimaVisita ? formatarData(c.ultimaVisita) : '-'}</td>
             <td>${c.previsaoRetorno ? formatarData(c.previsaoRetorno) : '-'}</td>
             <td>
-                <button class="btn-small bg-purple" onclick="abrirModalAnamnese(${c.id})" title="Histórico">
+                <button class="btn-small bg-purple" onclick="abrirModalAnamnese(${c.id})" title="Ficha">
                     <i data-lucide="clipboard-list" style="width:16px; height:16px;"></i>
                 </button>
-                
                 ${telefoneClean ? `<a href="${linkZap}" target="_blank"><button class="btn-small bg-green" title="WhatsApp"><i data-lucide="message-circle" style="width:16px; height:16px;"></i></button></a>` : ''}
-                
-                <button class="btn-small" onclick="excluirCliente(${c.id})" title="Excluir Cliente" style="background: var(--danger); color: white;">
+                <button class="btn-small" onclick="excluirCliente(${c.id})" title="Excluir" style="background: var(--danger); color: white;">
                     <i data-lucide="trash-2" style="width:16px; height:16px;"></i>
                 </button>
             </td>
@@ -499,8 +564,7 @@ function renderTabelaClientes() {
 function excluirCliente(id) {
     if(confirm("Tem certeza que deseja excluir este cliente? O histórico será perdido.")) {
         db.ref(`clientes/${id}`).remove()
-          .then(() => dispararToast("Cliente removido!", "error"))
-          .catch(e => dispararToast("Erro ao excluir", "error"));
+          .then(() => dispararToast("Cliente removido!", "error"));
     }
 }
 
@@ -532,16 +596,28 @@ function limparFiltroRetorno() {
 }
 
 function abrirModalCliente() {
-    const modal = document.getElementById("modal-novo-cliente");
-    if(modal) {
-        modal.style.display = 'flex';
-    } else {
-        const nome = prompt("Nome do Cliente:");
-        if(nome) {
-            const tel = prompt("Telefone (com DDD):");
-            const id = Date.now();
-            db.ref(`clientes/${id}`).set({ id, nome, telefone: tel, dataCadastro: new Date().toISOString() });
-            dispararToast("Cliente cadastrado!");
+    document.getElementById("modal-novo-cliente").style.display = 'flex';
+}
+
+function fecharModal(id) {
+    document.getElementById(id).style.display = 'none';
+}
+
+function processarImagem(file, callback) {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+            const elem = document.createElement('canvas');
+            const width = 600; // Reduz tamanho
+            const scaleFactor = width / img.width;
+            elem.width = width;
+            elem.height = img.height * scaleFactor;
+            const ctx = elem.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, img.height * scaleFactor);
+            callback(elem.toDataURL('image/jpeg', 0.7)); // Qualidade 70%
         }
     }
 }
@@ -550,16 +626,100 @@ function salvarNovoClienteModal() {
     const nome = document.getElementById("novo-cli-nome").value;
     const tel = document.getElementById("novo-cli-tel").value;
     const nasc = document.getElementById("novo-cli-nasc").value;
+    const fotoInput = document.getElementById("novo-cli-foto");
+    
     if(!nome) return dispararToast("Nome é obrigatório", "error");
-    const id = Date.now();
-    db.ref(`clientes/${id}`).set({ id, nome, telefone: tel, dataNasc: nasc, dataCadastro: new Date().toISOString() });
-    dispararToast("Cliente cadastrado!");
-    document.getElementById("modal-novo-cliente").style.display = 'none';
-    document.getElementById("novo-cli-nome").value = "";
-    document.getElementById("novo-cli-tel").value = "";
-    document.getElementById("novo-cli-nasc").value = "";
+    
+    const salvarNoBanco = (fotoBase64) => {
+        const id = Date.now();
+        db.ref(`clientes/${id}`).set({ 
+            id, nome, telefone: tel, dataNasc: nasc, 
+            dataCadastro: new Date().toISOString(),
+            pontos: 0,
+            foto: fotoBase64 || null
+        });
+        dispararToast("Cliente cadastrado!");
+        fecharModal('modal-novo-cliente');
+        document.getElementById("novo-cli-nome").value = "";
+    };
+
+    if(fotoInput.files[0]) {
+        processarImagem(fotoInput.files[0], salvarNoBanco);
+    } else {
+        salvarNoBanco(null);
+    }
 }
 
+function abrirModalAnamnese(id) {
+    clienteAnamneseAtual = store.clientes.find(c => c.id == id);
+    if(!clienteAnamneseAtual) return;
+    document.getElementById("modal-anamnese").style.display = 'flex';
+    document.getElementById("anamnese-cliente-nome").innerText = clienteAnamneseAtual.nome;
+    trocarAbaAnamnese('historico');
+    renderHistoricoAnamnese();
+}
+
+function trocarAbaAnamnese(aba) {
+    document.getElementById('tab-historico').style.display = aba === 'historico' ? 'block' : 'none';
+    document.getElementById('tab-galeria').style.display = aba === 'galeria' ? 'block' : 'none';
+    
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelector(`.tab-btn[onclick*="${aba}"]`).classList.add('active');
+    
+    if(aba === 'galeria') renderGaleriaFotos();
+}
+
+function renderHistoricoAnamnese() {
+    const div = document.getElementById("historico-lista");
+    const hist = clienteAnamneseAtual.historico ? Object.values(clienteAnamneseAtual.historico) : [];
+    div.innerHTML = hist.length === 0 ? "<small style='opacity:0.5'>Sem histórico.</small>" : hist.reverse().map(h => `<div style="border-left:2px solid var(--primary); padding-left:10px; margin-bottom:15px"><div style="display:flex; justify-content:space-between"><strong>${h.titulo}</strong><small style="opacity:0.5">${h.data}</small></div><p style="font-size:13px; color:#ddd; margin-top:5px">${h.obs}</p></div>`).join("");
+}
+
+function renderGaleriaFotos() {
+    const div = document.getElementById("galeria-grid");
+    const fotos = clienteAnamneseAtual.galeria ? Object.values(clienteAnamneseAtual.galeria) : [];
+    
+    div.innerHTML = fotos.length === 0 ? "<small style='opacity:0.5; grid-column:span 3; text-align:center;'>Nenhuma foto salva.</small>" : fotos.reverse().map(f => `
+        <div class="gallery-item" onclick="window.open('${f.img}')">
+            <img src="${f.img}">
+            <div class="gallery-caption">${f.desc}</div>
+        </div>
+    `).join("");
+}
+
+function salvarAnamnese() {
+    const titulo = document.getElementById("anam-titulo").value;
+    const obs = document.getElementById("anam-obs").value;
+    if(!titulo) return alert("Preencha o título!");
+    const novo = { data: new Date().toLocaleDateString('pt-BR'), titulo, obs };
+    db.ref(`clientes/${clienteAnamneseAtual.id}/historico`).push(novo).then(() => {
+        document.getElementById("anam-titulo").value = "";
+        document.getElementById("anam-obs").value = "";
+        dispararToast("Ficha atualizada!");
+        abrirModalAnamnese(clienteAnamneseAtual.id); // Reload
+    });
+}
+
+function salvarFotoGaleria() {
+    const input = document.getElementById("input-foto-galeria");
+    const desc = document.getElementById("desc-foto-galeria").value;
+    
+    if(!input.files[0]) return alert("Selecione uma foto!");
+    
+    processarImagem(input.files[0], (base64) => {
+        const novaFoto = { data: new Date().toLocaleDateString('pt-BR'), desc: desc || "Sem descrição", img: base64 };
+        db.ref(`clientes/${clienteAnamneseAtual.id}/galeria`).push(novaFoto).then(() => {
+            document.getElementById("input-foto-galeria").value = "";
+            document.getElementById("desc-foto-galeria").value = "";
+            dispararToast("Foto salva!");
+            abrirModalAnamnese(clienteAnamneseAtual.id); // Reload
+        });
+    });
+}
+
+// ==========================================
+// 9. DESPESAS E FINANCEIRO
+// ==========================================
 function lancarDespesa() {
     const desc = document.getElementById("desp-desc").value;
     const valor = parseFloat(document.getElementById("desp-valor").value);
@@ -651,45 +811,17 @@ function cancelarEdicaoServico() {
     document.getElementById("btn-cancelar-servico").style.display = "none";
 }
 
-function abrirModalAnamnese(id) {
-    clienteAnamneseAtual = store.clientes.find(c => c.id == id);
-    if(!clienteAnamneseAtual) return;
-    document.getElementById("modal-anamnese").style.display = 'flex';
-    document.getElementById("anamnese-cliente-nome").innerText = clienteAnamneseAtual.nome;
-    renderHistoricoAnamnese();
-}
-
-function renderHistoricoAnamnese() {
-    const div = document.getElementById("historico-lista");
-    const hist = clienteAnamneseAtual.historico ? Object.values(clienteAnamneseAtual.historico) : [];
-    div.innerHTML = hist.length === 0 ? "<small style='opacity:0.5'>Sem histórico.</small>" : hist.reverse().map(h => `<div style="border-left:2px solid var(--primary); padding-left:10px; margin-bottom:15px"><div style="display:flex; justify-content:space-between"><strong>${h.titulo}</strong><small style="opacity:0.5">${h.data}</small></div><p style="font-size:13px; color:#ddd; margin-top:5px">${h.obs}</p></div>`).join("");
-}
-
-function salvarAnamnese() {
-    const titulo = document.getElementById("anam-titulo").value;
-    const obs = document.getElementById("anam-obs").value;
-    if(!titulo) return alert("Preencha o título!");
-    const novo = { data: new Date().toLocaleDateString('pt-BR'), titulo, obs };
-    db.ref(`clientes/${clienteAnamneseAtual.id}/historico`).push(novo).then(() => {
-        document.getElementById("anam-titulo").value = "";
-        document.getElementById("anam-obs").value = "";
-        dispararToast("Ficha atualizada!");
-        fecharModal('modal-anamnese');
-    });
-}
-
-function fecharModal(id) {
-    document.getElementById(id).style.display = 'none';
-}
-
 function atualizarKPIs() {
     const hoje = new Date().toISOString().split('T')[0];
     const atendimentosHoje = store.atendimentos.filter(a => a.data === hoje);
     const fatHoje = atendimentosHoje.reduce((acc, a) => acc + a.total, 0);
     const retornosPendentes = store.clientes.filter(c => c.previsaoRetorno && c.previsaoRetorno <= hoje).length;
+    const totalPontos = store.clientes.reduce((acc, c) => acc + (c.pontos || 0), 0);
+    
     document.getElementById("dash-faturamento").innerText = `R$ ${fatHoje.toFixed(2)}`;
     document.getElementById("dash-atendimentos").innerText = atendimentosHoje.length;
     document.getElementById("dash-retornos").innerText = retornosPendentes;
+    document.getElementById("dash-pontos").innerText = totalPontos;
     
     const mesAtual = new Date().getMonth();
     const entMes = store.atendimentos.filter(a => new Date(a.data).getMonth() === mesAtual).reduce((acc, a) => acc + a.total, 0);
