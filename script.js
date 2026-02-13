@@ -67,6 +67,7 @@ function escolherDispositivo(tipo) {
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
     lucide.createIcons();
+    initRippleEffect();
     const loader = document.getElementById("loader-overlay");
     
     auth.onAuthStateChanged((user) => {
@@ -167,13 +168,12 @@ function resetarSistema() {
 }
 
 function fazerBackup() {
-    // Verifica se a biblioteca carregou (segurança)
     if (typeof XLSX === 'undefined') {
-        alert("Erro: Biblioteca Excel não carregada. Verifique se adicionou o script no HTML.");
+        alert("Erro: Biblioteca Excel não carregada.");
         return;
     }
 
-    const wb = XLSX.utils.book_new(); // Cria o arquivo Excel
+    const wb = XLSX.utils.book_new(); 
     const dataHoje = new Date().toISOString().split('T')[0];
 
     // --- ABA 1: CLIENTES ---
@@ -225,6 +225,23 @@ function fazerBackup() {
     dispararToast("📁 Planilha Excel gerada e baixada!");
 }
 
+function initRippleEffect() {
+    document.addEventListener('click', function (e) {
+        const target = e.target.closest('.btn-primary, .btn-glow, .btn-checkout, .btn-danger, .device-option, .nav-item, .mobile-nav-item');
+        if (target) {
+            const ripple = document.createElement('span');
+            ripple.classList.add('ripple');
+            const rect = target.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            ripple.style.width = ripple.style.height = `${size}px`;
+            ripple.style.left = `${e.clientX - rect.left - size / 2}px`;
+            ripple.style.top = `${e.clientY - rect.top - size / 2}px`;
+            target.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
+        }
+    });
+}
+
 function inicializarSistema() {
     console.log("Sistema Iniciado");
     
@@ -253,7 +270,7 @@ function inicializarSistema() {
         store.atendimentos = snap.val() ? Object.values(snap.val()) : [];
         atualizarKPIs();
         renderTabelaFinanceiro();
-        atualizarGraficos();
+        atualizarGraficos(); // Atualiza o gráfico de faturamento diário
         renderAgenda();
     });
 
@@ -268,7 +285,7 @@ function inicializarSistema() {
     db.ref('estoque').on('value', snap => {
         store.estoque = snap.val() ? Object.values(snap.val()) : [];
         renderEstoque();
-        renderServicosPDV(); // Atualiza o select do PDV quando o estoque muda
+        renderServicosPDV(); 
     });
 }
 
@@ -306,24 +323,32 @@ function salvarConfiguracoes() {
 // 5. NAVEGAÇÃO E UI
 // ==========================================
 function abrirAba(idAba) {
-    document.querySelectorAll('.aba').forEach(el => {
-        el.style.display = 'none';
-        el.classList.remove('fade-in');
+    const abasAtivas = document.querySelectorAll('.aba');
+    abasAtivas.forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(10px)';
+        setTimeout(() => el.style.display = 'none', 200);
     });
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
+
+    document.querySelectorAll('.nav-item, .mobile-nav-item').forEach(el => el.classList.remove('active'));
     
-    const aba = document.getElementById(idAba);
-    if(aba) {
-        aba.style.display = 'block';
-        setTimeout(() => aba.classList.add('fade-in'), 10);
-    }
     const btnMenu = document.querySelector(`.nav-item[onclick*="${idAba}"]`);
     if(btnMenu) btnMenu.classList.add('active');
+    
     const btnMobile = document.querySelector(`.mobile-nav-item[onclick*="${idAba}"]`);
     if(btnMobile) btnMobile.classList.add('active');
     
-    lucide.createIcons();
+    setTimeout(() => {
+        const aba = document.getElementById(idAba);
+        if(aba) {
+            aba.style.display = 'block';
+            void aba.offsetWidth; // Força reflow
+            aba.classList.add('fade-in');
+            aba.style.opacity = '1';
+            aba.style.transform = 'translateY(0)';
+        }
+        lucide.createIcons();
+    }, 200);
 }
 
 function dispararToast(msg, tipo = 'success') {
@@ -352,7 +377,7 @@ function dispararToast(msg, tipo = 'success') {
 }
 
 // ==========================================
-// 6. MÓDULO: PDV & PIX (MODIFICADO PARA ESTOQUE)
+// 6. MÓDULO: PDV & PIX
 // ==========================================
 function renderServicosPDV() {
     const sel = document.getElementById("pdv-servico");
@@ -554,20 +579,19 @@ function finalizarVenda() {
         db.ref(`atendimentos/${id}`).set(atendimento);
         dispararToast("✅ Venda Finalizada!");
         
-        // Atualiza FIDELIDADE
         if(idCliente) {
             db.ref(`clientes/${idCliente}/pontos`).transaction((pontosAtuais) => {
                 return (pontosAtuais || 0) + pontosGanhos;
             });
         }
 
-        // === NOVA LÓGICA: BAIXA NO ESTOQUE ===
+        // === BAIXA NO ESTOQUE ===
         store.carrinho.forEach(item => {
             if(item.tipo === 'produto') {
                 const produtoNoEstoque = store.estoque.find(p => p.id == item.id);
                 if(produtoNoEstoque) {
                     let novaQtd = parseInt(produtoNoEstoque.qtd) - 1;
-                    if(novaQtd < 0) novaQtd = 0; // Evita negativo
+                    if(novaQtd < 0) novaQtd = 0; 
                     db.ref(`estoque/${item.id}`).update({ qtd: novaQtd });
                 }
             }
@@ -589,7 +613,7 @@ function finalizarVenda() {
 }
 
 // ==========================================
-// 7. AGENDA COM SELETOR DE DATA
+// 7. AGENDA
 // ==========================================
 function initAgenda() {
     const hoje = new Date().toISOString().split('T')[0];
@@ -653,7 +677,7 @@ function editarAtendimento(id) {
 }
 
 // ==========================================
-// 8. CLIENTES, GALERIA & EDIÇÃO (MODIFICADO)
+// 8. CLIENTES, GALERIA & EDIÇÃO
 // ==========================================
 function renderTabelaClientes() {
     const tbody = document.getElementById("tabela-clientes");
@@ -1098,22 +1122,121 @@ function renderTabelaFinanceiro() {
     tbody.innerHTML = extrato.map(item => `<tr><td>${formatarData(item.data)}</td><td>${item.desc}</td><td><span class="badge" style="${item.tipo==='entrada'?'background:#10b98120;color:#10b981':'background:#f43f5e20;color:#f43f5e'}">${item.tipo.toUpperCase()}</span></td><td>R$ ${item.valor.toFixed(2)}</td></tr>`).join("");
 }
 
+// -----------------------------------------------------------
+// ATUALIZAÇÃO IMPORTANTE NO GRÁFICO (AGRUPAMENTO POR DIA)
+// -----------------------------------------------------------
+// Função auxiliar para definir datas rápidas (Hoje, 7 dias, etc)
+function setPeriodoGrafico(tipo) {
+    const hoje = new Date().toISOString().split('T')[0];
+    const inputFim = document.getElementById("dash-grafico-fim");
+    const inputInicio = document.getElementById("dash-grafico-inicio");
+
+    inputFim.value = hoje;
+
+    if (tipo === 'hoje') {
+        inputInicio.value = hoje;
+    } else if (tipo === '7dias') {
+        const seteDiasAtras = new Date();
+        seteDiasAtras.setDate(seteDiasAtras.getDate() - 6);
+        inputInicio.value = seteDiasAtras.toISOString().split('T')[0];
+    }
+    
+    atualizarGraficos();
+}
+
+// Gráficos atualizados com filtro por data
 function atualizarGraficos() {
-    const contagem = {}; store.atendimentos.forEach(a => a.servicos.forEach(s => contagem[s.nome] = (contagem[s.nome] || 0) + 1));
+    let dataInicio = document.getElementById("dash-grafico-inicio").value;
+    let dataFim = document.getElementById("dash-grafico-fim").value;
+
+    // Se não houver data definida, assume os últimos 7 dias por padrão
+    if (!dataInicio || !dataFim) {
+        const hoje = new Date();
+        const seteDiasAtras = new Date();
+        seteDiasAtras.setDate(hoje.getDate() - 6);
+        
+        dataInicio = seteDiasAtras.toISOString().split('T')[0];
+        dataFim = hoje.toISOString().split('T')[0];
+        
+        document.getElementById("dash-grafico-inicio").value = dataInicio;
+        document.getElementById("dash-grafico-fim").value = dataFim;
+    }
+
+    // Filtrar atendimentos dentro do período selecionado
+    const atendimentosFiltrados = store.atendimentos.filter(a => a.data >= dataInicio && a.data <= dataFim);
+
+    // 1. Lógica do Gráfico de Rosca (Serviços)
+    const contagem = {}; 
+    atendimentosFiltrados.forEach(a => {
+        if(a.servicos) {
+            a.servicos.forEach(s => contagem[s.nome] = (contagem[s.nome] || 0) + 1);
+        }
+    });
     const sorted = Object.entries(contagem).sort((a,b) => b[1] - a[1]).slice(0,5);
+    
     if(chartTop) chartTop.destroy();
     chartTop = new Chart(document.getElementById("chartTopServicos"), {
         type: 'doughnut',
-        data: { labels: sorted.map(x => x[0]), datasets: [{ data: sorted.map(x => x[1]), backgroundColor: ['#d946ef', '#8b5cf6', '#6366f1', '#ec4899', '#a855f7'], borderColor: '#09090b', borderWidth: 2 }] },
+        data: { 
+            labels: sorted.map(x => x[0]), 
+            datasets: [{ 
+                data: sorted.map(x => x[1]), 
+                backgroundColor: ['#d946ef', '#8b5cf6', '#6366f1', '#ec4899', '#a855f7'], 
+                borderColor: '#09090b', 
+                borderWidth: 2 
+            }] 
+        },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#fff', boxWidth: 10 } } } }
     });
 
-    const ultimos = store.atendimentos.slice(0, 10).reverse(); 
+    // 2. Lógica do Gráfico de Linha (Faturamento Agrupado)
+    const diasRange = [];
+    const faturamentosRange = [];
+    
+    let atual = new Date(dataInicio + 'T00:00:00');
+    const fim = new Date(dataFim + 'T00:00:00');
+
+    while (atual <= fim) {
+        const dataStr = atual.toISOString().split('T')[0];
+        const label = `${atual.getDate()}/${atual.getMonth() + 1}`;
+        
+        diasRange.push(label);
+        
+        const totalDoDia = store.atendimentos
+            .filter(a => a.data === dataStr)
+            .reduce((acc, curr) => acc + parseFloat(curr.total), 0);
+            
+        faturamentosRange.push(totalDoDia);
+        atual.setDate(atual.getDate() + 1);
+    }
+
     if(chartSemana) chartSemana.destroy();
     chartSemana = new Chart(document.getElementById("chartSemanal"), {
         type: 'line',
-        data: { labels: ultimos.map(a => a.hora), datasets: [{ label: 'Venda (R$)', data: ultimos.map(a => a.total), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 3, tension: 0.4, fill: true, pointBackgroundColor: '#09090b', pointBorderColor: '#10b981', pointBorderWidth: 2 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#a1a1aa' } }, x: { grid: { display: false }, ticks: { color: '#a1a1aa' } } } }
+        data: { 
+            labels: diasRange, 
+            datasets: [{ 
+                label: 'Faturamento (R$)', 
+                data: faturamentosRange,
+                borderColor: '#10b981', 
+                backgroundColor: 'rgba(16, 185, 129, 0.1)', 
+                borderWidth: 3, 
+                tension: 0.4, 
+                fill: true, 
+                pointBackgroundColor: '#09090b', 
+                pointBorderColor: '#10b981', 
+                pointBorderWidth: 2 
+            }] 
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            plugins: { legend: { display: false } }, 
+            scales: { 
+                y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#a1a1aa' }, beginAtZero: true }, 
+                x: { grid: { display: false }, ticks: { color: '#a1a1aa' } } 
+            } 
+        }
     });
 }
 
