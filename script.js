@@ -31,6 +31,7 @@ let store = {
     clientes: [],
     atendimentos: [],
     despesas: [],
+    estoque: [], 
     carrinho: []
 };
 
@@ -39,6 +40,8 @@ let chartSemana = null;
 let idDespesaEdicao = null;
 let idServicoEdicao = null;
 let idAtendimentoEdicao = null; 
+let idProdutoEdicao = null; 
+let idClienteEdicao = null; 
 let clienteAnamneseAtual = null;
 
 // ==========================================
@@ -92,6 +95,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const options = { weekday: 'long', day: 'numeric', month: 'long' };
     const dateEl = document.getElementById("data-hoje");
     if(dateEl) dateEl.innerText = new Date().toLocaleDateString('pt-BR', options);
+    
+    // Inicializa a data da agenda como hoje
+    initAgenda();
 });
 
 function verificarSenha() {
@@ -127,17 +133,37 @@ function logout() {
 }
 
 function resetarSistema() {
-    const senha1 = prompt("⚠️ PERIGO: Apagar TODOS os dados? Digite a senha:");
-    if (senha1 === "Stephanye13!") {
-        const senha2 = prompt("⚠️ CONFIRME: Digite a senha novamente:");
-        if (senha2 === "Stephanye13!") {
-            db.ref('/').set(null)
-              .then(() => {
-                  alert("♻️ Sistema resetado!");
-                  location.reload();
-              });
-        }
+    const user = auth.currentUser;
+    
+    if (!user) {
+        alert("Você precisa estar logado para fazer isso.");
+        return;
     }
+
+    const senhaLogin = prompt("⚠️ PERIGO: Esta ação apagará TODOS os dados.\n\nPara confirmar, digite sua SENHA DE LOGIN:");
+    
+    if (!senhaLogin) return; 
+
+    const credencial = firebase.auth.EmailAuthProvider.credential(user.email, senhaLogin);
+
+    user.reauthenticateWithCredential(credencial)
+        .then(() => {
+            if (confirm("⚠️ ÚLTIMA CHANCE: Tem certeza absoluta que deseja zerar o sistema?")) {
+                db.ref('/').set(null)
+                    .then(() => {
+                        alert("♻️ Sistema resetado com segurança!");
+                        location.reload();
+                    })
+                    .catch((erro) => {
+                        console.error(erro);
+                        alert("Erro ao apagar dados: " + erro.message);
+                    });
+            }
+        })
+        .catch((error) => {
+            console.error("Erro de autenticação:", error);
+            alert("⛔ Senha incorreta! Ação bloqueada por segurança.");
+        });
 }
 
 function fazerBackup() {
@@ -156,7 +182,7 @@ function fazerBackup() {
 function inicializarSistema() {
     console.log("Sistema Iniciado");
     
-    // CARREGAR CONFIGURAÇÕES (Pix, Meta, etc)
+    // CARREGAR CONFIGURAÇÕES
     db.ref('config').on('value', snap => {
         if(snap.val()) {
             configSistema = snap.val();
@@ -191,13 +217,19 @@ function inicializarSistema() {
         renderListaGestaoDespesas();
         atualizarKPIs();
     });
+
+    // NOVO: Estoque
+    db.ref('estoque').on('value', snap => {
+        store.estoque = snap.val() ? Object.values(snap.val()) : [];
+        renderEstoque();
+        renderServicosPDV(); // Atualiza o select do PDV quando o estoque muda
+    });
 }
 
 // ==========================================
 // 4. CONFIGURAÇÕES & MODAL
 // ==========================================
 function abrirModalConfig() {
-    // Preenche os campos com os dados atuais
     document.getElementById("cfg-chave-pix").value = configSistema.chavePix || "";
     document.getElementById("cfg-nome-pix").value = configSistema.nomePix || "";
     document.getElementById("cfg-cidade-pix").value = configSistema.cidadePix || "";
@@ -214,13 +246,12 @@ function salvarConfiguracoes() {
         metaMensal: parseFloat(document.getElementById("cfg-meta-mensal").value) || 0
     };
 
-    // Salva no Firebase no nó 'config'
     db.ref('config').set(novaConfig)
         .then(() => {
             configSistema = novaConfig;
             dispararToast("⚙️ Configurações salvas!");
             fecharModal('modal-config');
-            atualizarKPIs(); // Para atualizar a meta se tiver mudado
+            atualizarKPIs(); 
         })
         .catch(erro => alert("Erro ao salvar: " + erro.message));
 }
@@ -275,13 +306,29 @@ function dispararToast(msg, tipo = 'success') {
 }
 
 // ==========================================
-// 6. MÓDULO: PDV & PIX
+// 6. MÓDULO: PDV & PIX (MODIFICADO PARA ESTOQUE)
 // ==========================================
 function renderServicosPDV() {
     const sel = document.getElementById("pdv-servico");
     if(!sel) return;
-    sel.innerHTML = '<option value="">Selecione um serviço...</option>' + 
-        store.servicos.map(s => `<option value="${s.id}" data-preco="${s.preco}">${s.nome} - R$ ${parseFloat(s.preco).toFixed(2)}</option>`).join("");
+    
+    let html = '<option value="">Selecione...</option>';
+    
+    // Grupo de Serviços
+    html += '<optgroup label="✨ Serviços">';
+    store.servicos.forEach(s => {
+        html += `<option value="${s.id}" data-tipo="servico" data-preco="${s.preco}">${s.nome} - R$ ${parseFloat(s.preco).toFixed(2)}</option>`;
+    });
+    html += '</optgroup>';
+
+    // Grupo de Produtos (Estoque) - NOVO
+    html += '<optgroup label="📦 Produtos / Estoque">';
+    store.estoque.forEach(p => {
+        html += `<option value="${p.id}" data-tipo="produto" data-preco="${p.preco}">${p.nome} (Estoque: ${p.qtd}) - R$ ${parseFloat(p.preco).toFixed(2)}</option>`;
+    });
+    html += '</optgroup>';
+
+    sel.innerHTML = html;
 }
 
 function renderClientesPDV() {
@@ -293,11 +340,19 @@ function renderClientesPDV() {
 
 function adicionarAoCarrinho() {
     const sel = document.getElementById("pdv-servico");
-    const id = sel.value;
-    if(!id) return dispararToast("Selecione um serviço!", "error");
+    const option = sel.options[sel.selectedIndex];
+    
+    if(!sel.value) return dispararToast("Selecione algo!", "error");
 
-    const servico = store.servicos.find(s => s.id == id);
-    store.carrinho.push({ ...servico });
+    // Captura se é serviço ou produto
+    const item = {
+        id: sel.value,
+        nome: option.text.split(' - R$')[0].split(' (Estoque')[0], // Limpa o nome para o carrinho
+        preco: option.getAttribute('data-preco'),
+        tipo: option.getAttribute('data-tipo') // 'servico' ou 'produto'
+    };
+
+    store.carrinho.push(item);
     renderCarrinho();
 }
 
@@ -315,7 +370,7 @@ function renderCarrinho() {
     lista.innerHTML = store.carrinho.map((item, index) => {
         total += parseFloat(item.preco);
         return `<li>
-            <span>${item.nome}</span>
+            <span>${item.tipo === 'produto' ? '📦 ' : '✨ '} ${item.nome}</span>
             <div style="display:flex; align-items:center; gap:10px">
                 <strong>R$ ${parseFloat(item.preco).toFixed(2)}</strong>
                 <i data-lucide="trash-2" onclick="removerDoCarrinho(${index})" style="width:14px; cursor:pointer; color:#f43f5e"></i>
@@ -326,7 +381,6 @@ function renderCarrinho() {
     lucide.createIcons();
     document.getElementById("pdv-total").innerText = `R$ ${total.toFixed(2)}`;
     
-    // Atualiza PIX se estiver selecionado
     if(document.getElementById("pdv-pagamento").value === "Pix") {
         gerarPix(total);
     } else if(document.getElementById("pdv-pagamento").value === "Dinheiro") {
@@ -387,19 +441,15 @@ function calcularTroco() {
 
 // === LÓGICA DE GERAÇÃO PIX ESTÁTICO ===
 function gerarPix(valor) {
-    // Verifica se a mãe cadastrou a chave
     if(!configSistema.chavePix || !configSistema.nomePix) {
-        // Se estiver vazio, não gera o QR code e avisa (opcionalmente)
-        // Aqui apenas limpamos ou mostramos aviso simples
         document.getElementById("pix-copia-cola").value = "Configure a Chave Pix nas Configurações!";
         return;
     }
 
     const chave = configSistema.chavePix;
     const nome = configSistema.nomePix;
-    const cidade = configSistema.cidadePix || "Brasil"; // Cidade padrão se não tiver
+    const cidade = configSistema.cidadePix || "Brasil";
 
-    // Formato Pix Copia e Cola usando as variáveis do banco
     const payload = `00020126330014BR.GOV.BCB.PIX0114${chave}520400005303986540${valor.toFixed(2).length + 2}${valor.toFixed(2)}5802BR59${nome.length < 10 ? '0' + nome.length : nome.length}${nome}60${cidade.length < 10 ? '0' + cidade.length : cidade.length}${cidade}62070503***6304`;
     
     const qr = new QRious({
@@ -428,7 +478,7 @@ function finalizarVenda() {
     const total = store.carrinho.reduce((acc, i) => acc + parseFloat(i.preco), 0);
 
     let nomeCliente = "Cliente Avulso";
-    let pontosGanhos = Math.floor(total); // 1 real = 1 ponto
+    let pontosGanhos = Math.floor(total); 
 
     if(idCliente) {
         const c = store.clientes.find(x => x.id == idCliente);
@@ -464,6 +514,18 @@ function finalizarVenda() {
                 return (pontosAtuais || 0) + pontosGanhos;
             });
         }
+
+        // === NOVA LÓGICA: BAIXA NO ESTOQUE ===
+        store.carrinho.forEach(item => {
+            if(item.tipo === 'produto') {
+                const produtoNoEstoque = store.estoque.find(p => p.id == item.id);
+                if(produtoNoEstoque) {
+                    let novaQtd = parseInt(produtoNoEstoque.qtd) - 1;
+                    if(novaQtd < 0) novaQtd = 0; // Evita negativo
+                    db.ref(`estoque/${item.id}`).update({ qtd: novaQtd });
+                }
+            }
+        });
     }
 
     if(idCliente) {
@@ -481,21 +543,39 @@ function finalizarVenda() {
 }
 
 // ==========================================
-// 7. AGENDA
+// 7. AGENDA COM SELETOR DE DATA
 // ==========================================
+function initAgenda() {
+    const hoje = new Date().toISOString().split('T')[0];
+    const input = document.getElementById("agenda-date-input");
+    if(input) {
+        input.value = hoje;
+        renderAgenda();
+    }
+}
+
 function renderAgenda() {
     const div = document.getElementById("lista-agenda");
-    const hoje = new Date().toISOString().split('T')[0];
-    const agendaHoje = store.atendimentos.filter(a => a.data === hoje).sort((a,b) => b.timestamp - a.timestamp);
-    const dateDisplay = document.getElementById("agenda-data-display");
-    if(dateDisplay) dateDisplay.innerText = new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'numeric'});
+    const inputDate = document.getElementById("agenda-date-input");
+    
+    if(!inputDate) return;
 
-    if(agendaHoje.length === 0) {
-        div.innerHTML = "<p class='text-muted'>Nenhum atendimento registrado hoje.</p>";
+    const dataSelecionada = inputDate.value;
+    
+    const dataObj = new Date(dataSelecionada + 'T00:00:00');
+    const options = { weekday: 'long', day: 'numeric', month: 'long' };
+    document.getElementById("agenda-dia-semana").innerText = dataObj.toLocaleDateString('pt-BR', options);
+
+    const agendaDoDia = store.atendimentos
+        .filter(a => a.data === dataSelecionada)
+        .sort((a,b) => b.timestamp - a.timestamp);
+
+    if(agendaDoDia.length === 0) {
+        div.innerHTML = "<p class='text-muted' style='text-align:center; padding:20px;'>Nenhum atendimento neste dia.</p>";
         return;
     }
 
-    div.innerHTML = agendaHoje.map(a => `
+    div.innerHTML = agendaDoDia.map(a => `
         <div class="glass-panel" style="padding:15px; margin-bottom:10px; border-left:4px solid var(--primary); display:flex; justify-content:space-between; align-items:center">
             <div>
                 <strong style="font-size:18px">${a.hora}</strong>
@@ -527,7 +607,7 @@ function editarAtendimento(id) {
 }
 
 // ==========================================
-// 8. CLIENTES & GALERIA
+// 8. CLIENTES, GALERIA & EDIÇÃO (MODIFICADO)
 // ==========================================
 function renderTabelaClientes() {
     const tbody = document.getElementById("tabela-clientes");
@@ -540,7 +620,7 @@ function renderTabelaClientes() {
             <td style="display:flex; align-items:center; gap:10px">
                 <div class="avatar" style="background-image:url('${c.foto || ''}'); background-size:cover;">${c.foto ? '' : c.nome[0]}</div>
                 <div>
-                    <strong>${c.nome}</strong><br>
+                    <strong style="cursor:pointer; color:var(--primary)" onclick="abrirModalAnamnese(${c.id})" title="Ver Histórico Completo">${c.nome}</strong><br>
                     <span style="font-size:12px; opacity:0.7">${c.telefone || 'Sem telefone'}</span>
                 </div>
             </td>
@@ -548,7 +628,10 @@ function renderTabelaClientes() {
             <td>${c.ultimaVisita ? formatarData(c.ultimaVisita) : '-'}</td>
             <td>${c.previsaoRetorno ? formatarData(c.previsaoRetorno) : '-'}</td>
             <td>
-                <button class="btn-small bg-purple" onclick="abrirModalAnamnese(${c.id})" title="Ficha">
+                <button class="btn-small bg-yellow" onclick="editarCliente(${c.id})" title="Editar Dados">
+                    <i data-lucide="pencil" style="width:16px; height:16px;"></i>
+                </button>
+                <button class="btn-small bg-purple" onclick="abrirModalAnamnese(${c.id})" title="Histórico e Fotos">
                     <i data-lucide="clipboard-list" style="width:16px; height:16px;"></i>
                 </button>
                 ${telefoneClean ? `<a href="${linkZap}" target="_blank"><button class="btn-small bg-green" title="WhatsApp"><i data-lucide="message-circle" style="width:16px; height:16px;"></i></button></a>` : ''}
@@ -596,6 +679,24 @@ function limparFiltroRetorno() {
 }
 
 function abrirModalCliente() {
+    idClienteEdicao = null;
+    document.getElementById("titulo-modal-cliente").innerText = "Novo Cadastro";
+    document.getElementById("novo-cli-nome").value = "";
+    document.getElementById("novo-cli-tel").value = "";
+    document.getElementById("novo-cli-nasc").value = "";
+    document.getElementById("modal-novo-cliente").style.display = 'flex';
+}
+
+function editarCliente(id) {
+    const c = store.clientes.find(x => x.id == id);
+    if (!c) return;
+
+    idClienteEdicao = id;
+    document.getElementById("titulo-modal-cliente").innerText = "Editar Cliente";
+    document.getElementById("novo-cli-nome").value = c.nome;
+    document.getElementById("novo-cli-tel").value = c.telefone || "";
+    document.getElementById("novo-cli-nasc").value = c.dataNasc || "";
+    
     document.getElementById("modal-novo-cliente").style.display = 'flex';
 }
 
@@ -611,13 +712,13 @@ function processarImagem(file, callback) {
         img.src = event.target.result;
         img.onload = () => {
             const elem = document.createElement('canvas');
-            const width = 600; // Reduz tamanho
+            const width = 600; 
             const scaleFactor = width / img.width;
             elem.width = width;
             elem.height = img.height * scaleFactor;
             const ctx = elem.getContext('2d');
             ctx.drawImage(img, 0, 0, width, img.height * scaleFactor);
-            callback(elem.toDataURL('image/jpeg', 0.7)); // Qualidade 70%
+            callback(elem.toDataURL('image/jpeg', 0.7)); 
         }
     }
 }
@@ -631,14 +732,21 @@ function salvarNovoClienteModal() {
     if(!nome) return dispararToast("Nome é obrigatório", "error");
     
     const salvarNoBanco = (fotoBase64) => {
-        const id = Date.now();
-        db.ref(`clientes/${id}`).set({ 
-            id, nome, telefone: tel, dataNasc: nasc, 
-            dataCadastro: new Date().toISOString(),
-            pontos: 0,
-            foto: fotoBase64 || null
-        });
-        dispararToast("Cliente cadastrado!");
+        if (idClienteEdicao) {
+            const updates = { nome, telefone: tel, dataNasc: nasc };
+            if(fotoBase64) updates.foto = fotoBase64;
+            db.ref(`clientes/${idClienteEdicao}`).update(updates);
+            dispararToast("Dados do cliente atualizados!");
+        } else {
+            const id = Date.now();
+            db.ref(`clientes/${id}`).set({ 
+                id, nome, telefone: tel, dataNasc: nasc, 
+                dataCadastro: new Date().toISOString(),
+                pontos: 0,
+                foto: fotoBase64 || null
+            });
+            dispararToast("Cliente cadastrado!");
+        }
         fecharModal('modal-novo-cliente');
         document.getElementById("novo-cli-nome").value = "";
     };
@@ -655,24 +763,59 @@ function abrirModalAnamnese(id) {
     if(!clienteAnamneseAtual) return;
     document.getElementById("modal-anamnese").style.display = 'flex';
     document.getElementById("anamnese-cliente-nome").innerText = clienteAnamneseAtual.nome;
-    trocarAbaAnamnese('historico');
-    renderHistoricoAnamnese();
+    
+    // Agora abre na aba de compras (histórico) por padrão
+    trocarAbaAnamnese('compras');
+    
+    // PREENCHE O HISTÓRICO DE COMPRAS/SERVIÇOS
+    const divCompras = document.getElementById("lista-compras-servicos");
+    if(divCompras) {
+        const comprasDoCliente = store.atendimentos
+            .filter(a => a.clienteId == id)
+            .sort((a,b) => b.timestamp - a.timestamp);
+
+        if(comprasDoCliente.length === 0) {
+            divCompras.innerHTML = "<p style='opacity:0.5; padding:10px; text-align:center'>Nenhum serviço realizado ainda.</p>";
+        } else {
+            divCompras.innerHTML = comprasDoCliente.map(a => `
+                <div style="border-bottom:1px solid var(--border); padding:10px 0;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <strong style="color:var(--success)">${formatarData(a.data)}</strong>
+                        <small>Total: R$ ${a.total.toFixed(2)}</small>
+                    </div>
+                    <div style="font-size:12px; margin-top:5px; color:#ddd;">
+                        ${a.servicos.map(s => `• ${s.nome}`).join("<br>")}
+                    </div>
+                </div>
+            `).join("");
+        }
+    }
 }
 
 function trocarAbaAnamnese(aba) {
-    document.getElementById('tab-historico').style.display = aba === 'historico' ? 'block' : 'none';
-    document.getElementById('tab-galeria').style.display = aba === 'galeria' ? 'block' : 'none';
+    // Esconde todas
+    const abas = ['historico', 'galeria', 'compras'];
+    abas.forEach(a => {
+        const el = document.getElementById('tab-' + a);
+        if(el) el.style.display = 'none';
+    });
     
+    // Mostra a selecionada
+    const alvo = document.getElementById('tab-' + aba);
+    if(alvo) alvo.style.display = 'block';
+    
+    // Atualiza botões
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelector(`.tab-btn[onclick*="${aba}"]`).classList.add('active');
     
+    if(aba === 'historico') renderHistoricoAnamnese();
     if(aba === 'galeria') renderGaleriaFotos();
 }
 
 function renderHistoricoAnamnese() {
     const div = document.getElementById("historico-lista");
     const hist = clienteAnamneseAtual.historico ? Object.values(clienteAnamneseAtual.historico) : [];
-    div.innerHTML = hist.length === 0 ? "<small style='opacity:0.5'>Sem histórico.</small>" : hist.reverse().map(h => `<div style="border-left:2px solid var(--primary); padding-left:10px; margin-bottom:15px"><div style="display:flex; justify-content:space-between"><strong>${h.titulo}</strong><small style="opacity:0.5">${h.data}</small></div><p style="font-size:13px; color:#ddd; margin-top:5px">${h.obs}</p></div>`).join("");
+    div.innerHTML = hist.length === 0 ? "<small style='opacity:0.5'>Sem anotações técnicas.</small>" : hist.reverse().map(h => `<div style="border-left:2px solid var(--primary); padding-left:10px; margin-bottom:15px"><div style="display:flex; justify-content:space-between"><strong>${h.titulo}</strong><small style="opacity:0.5">${h.data}</small></div><p style="font-size:13px; color:#ddd; margin-top:5px">${h.obs}</p></div>`).join("");
 }
 
 function renderGaleriaFotos() {
@@ -718,7 +861,77 @@ function salvarFotoGaleria() {
 }
 
 // ==========================================
-// 9. DESPESAS E FINANCEIRO
+// 9. ESTOQUE (NOVO)
+// ==========================================
+function salvarProdutoEstoque() {
+    const nome = document.getElementById("prod-nome").value;
+    const qtd = parseInt(document.getElementById("prod-qtd").value);
+    const preco = parseFloat(document.getElementById("prod-preco").value);
+
+    if(!nome || isNaN(qtd) || isNaN(preco)) return dispararToast("Preencha todos os campos!", "error");
+
+    if (idProdutoEdicao) {
+        db.ref(`estoque/${idProdutoEdicao}`).update({ nome, qtd, preco })
+            .then(() => dispararToast("Produto atualizado!"));
+        cancelarEdicaoProduto();
+    } else {
+        const id = Date.now();
+        db.ref(`estoque/${id}`).set({ id, nome, qtd, preco })
+            .then(() => dispararToast("Produto cadastrado!"));
+        document.getElementById("prod-nome").value = "";
+        document.getElementById("prod-qtd").value = "";
+        document.getElementById("prod-preco").value = "";
+    }
+}
+
+function renderEstoque() {
+    const tbody = document.getElementById("tabela-estoque");
+    if(!tbody) return;
+
+    if(store.estoque.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; opacity:0.5'>Estoque vazio.</td></tr>";
+        return;
+    }
+
+    tbody.innerHTML = store.estoque.map(p => `
+        <tr>
+            <td>${p.nome}</td>
+            <td>${p.qtd} un</td>
+            <td>R$ ${parseFloat(p.preco).toFixed(2)}</td>
+            <td>
+                <button class="btn-small bg-yellow" onclick="editarProdutoEstoque(${p.id})"><i data-lucide="pencil" style="width:14px"></i></button>
+                <button class="btn-small bg-purple" onclick="if(confirm('Excluir produto?')) db.ref('estoque/${p.id}').remove()"><i data-lucide="trash-2" style="width:14px"></i></button>
+            </td>
+        </tr>
+    `).join("");
+    lucide.createIcons();
+}
+
+function editarProdutoEstoque(id) {
+    const p = store.estoque.find(x => x.id === id);
+    if(!p) return;
+    
+    idProdutoEdicao = id;
+    document.getElementById("prod-nome").value = p.nome;
+    document.getElementById("prod-qtd").value = p.qtd;
+    document.getElementById("prod-preco").value = p.preco;
+
+    document.getElementById("btn-salvar-produto").innerText = "ATUALIZAR";
+    document.getElementById("btn-cancelar-produto").style.display = "inline-block";
+}
+
+function cancelarEdicaoProduto() {
+    idProdutoEdicao = null;
+    document.getElementById("prod-nome").value = "";
+    document.getElementById("prod-qtd").value = "";
+    document.getElementById("prod-preco").value = "";
+    document.getElementById("btn-salvar-produto").innerText = "Salvar";
+    document.getElementById("btn-cancelar-produto").style.display = "none";
+}
+
+
+// ==========================================
+// 10. DESPESAS E FINANCEIRO
 // ==========================================
 function lancarDespesa() {
     const desc = document.getElementById("desp-desc").value;
@@ -874,7 +1087,7 @@ function formatarData(dataISO) {
 }
 
 // ==========================================
-// 10. MÁSCARAS DE INPUT (UX)
+// 11. MÁSCARAS DE INPUT (UX)
 // ==========================================
 document.addEventListener('input', function (e) {
     const target = e.target;
