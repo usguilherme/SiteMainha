@@ -85,7 +85,7 @@
                     <i data-lucide="layout-grid"></i> Visão Geral
                 </a>
                 <a onclick="abrirAba('agenda')" class="nav-item">
-                    <i data-lucide="calendar-days"></i> Agenda Visual
+                    <i data-lucide="calendar-days"></i> Agenda
                 </a>
                 <a onclick="abrirAba('novo_atendimento')" class="nav-item">
                     <i data-lucide="sparkles"></i> Caixa / Venda
@@ -94,6 +94,9 @@
                 <p class="nav-title">GESTÃO</p>
                 <a onclick="abrirAba('clientes')" class="nav-item">
                     <i data-lucide="users"></i> Clientes VIP
+                </a>
+                <a onclick="abrirAba('estoque')" class="nav-item">
+                    <i data-lucide="package"></i> Estoque
                 </a>
                 <a onclick="abrirAba('financeiro')" class="nav-item">
                     <i data-lucide="trending-up"></i> Financeiro
@@ -197,8 +200,11 @@
                     <div class="glass-panel" style="min-height: 100%;">
                         <div class="agenda-header-flex">
                             <div>
-                                <h3 class="text-gradient">Agenda do Dia</h3>
-                                <p id="agenda-data-display" class="text-muted"></p>
+                                <h3 class="text-gradient">Agenda</h3>
+                                <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
+                                    <input type="date" id="agenda-date-input" class="modern-input" style="width: 150px;" onchange="renderAgenda()">
+                                    <span id="agenda-dia-semana" class="text-muted" style="font-size: 12px;"></span>
+                                </div>
                             </div>
                             <button onclick="abrirAba('novo_atendimento')" class="btn-primary">+ Novo</button>
                         </div>
@@ -221,7 +227,7 @@
 
                             <div class="step-box">
                                 <span class="step-num">2</span>
-                                <h3>O que ela fez?</h3>
+                                <h3>O que ela fez / Levou?</h3>
                                 <div class="form-group">
                                     <select id="pdv-servico" class="modern-input"></select>
                                     <button onclick="adicionarAoCarrinho()" class="btn-primary">Adicionar</button>
@@ -318,6 +324,40 @@
                                     </tr>
                                 </thead>
                                 <tbody id="tabela-clientes"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="estoque" class="aba fade-in" style="display:none">
+                    <div class="glass-panel form-inline mb-15">
+                        <input type="hidden" id="id-produto-edicao">
+                        <div class="grid-2" style="grid-template-columns: 2fr 1fr 1fr auto; width: 100%;">
+                            <input type="text" id="prod-nome" placeholder="Nome do Produto (Ex: Shampoo)" class="modern-input">
+                            <input type="number" id="prod-qtd" placeholder="Qtd" class="modern-input">
+                            <input type="number" id="prod-preco" placeholder="Valor Venda (R$)" class="modern-input">
+                            
+                            <div class="action-buttons">
+                                <button onclick="salvarProdutoEstoque()" id="btn-salvar-produto" class="btn-primary">Salvar</button>
+                                <button onclick="cancelarEdicaoProduto()" id="btn-cancelar-produto" class="btn-danger" style="display:none">✕</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-panel">
+                        <h3><i data-lucide="package" style="width:16px"></i> Itens em Estoque</h3>
+                        <div class="table-responsive">
+                            <table class="modern-table">
+                                <thead>
+                                    <tr>
+                                        <th>Produto</th>
+                                        <th>Quantidade</th>
+                                        <th>Preço Venda</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-estoque">
+                                    </tbody>
                             </table>
                         </div>
                     </div>
@@ -426,8 +466,8 @@
         <a onclick="abrirAba('novo_atendimento')" class="mobile-nav-item">
             <i data-lucide="sparkles"></i> Venda
         </a>
-        <a onclick="abrirAba('clientes')" class="mobile-nav-item">
-            <i data-lucide="users"></i> Clientes
+        <a onclick="abrirAba('estoque')" class="mobile-nav-item">
+            <i data-lucide="package"></i> Estoque
         </a>
         <a onclick="abrirAba('financeiro')" class="mobile-nav-item">
             <i data-lucide="menu"></i> +Menu
@@ -443,11 +483,17 @@
             <div class="modal-body">
                 <h2 id="anamnese-cliente-nome" class="text-gradient">Cliente</h2>
                 <div class="tab-controls">
-                    <button class="tab-btn active" onclick="trocarAbaAnamnese('historico')">Histórico</button>
-                    <button class="tab-btn" onclick="trocarAbaAnamnese('galeria')">Galeria (Antes/Depois)</button>
+                    <button class="tab-btn active" onclick="trocarAbaAnamnese('compras')">Compras & Serviços</button>
+                    <button class="tab-btn" onclick="trocarAbaAnamnese('historico')">Histórico Téc.</button>
+                    <button class="tab-btn" onclick="trocarAbaAnamnese('galeria')">Galeria (Fotos)</button>
                 </div>
                 
-                <div id="tab-historico">
+                <div id="tab-compras" style="display:block">
+                    <div id="lista-compras-servicos" class="historico-box" style="max-height: 300px;">
+                        </div>
+                </div>
+
+                <div id="tab-historico" style="display:none">
                     <div id="historico-lista" class="historico-box"></div>
                     <div class="new-entry">
                         <label class="label-small">Novo Registro Técnico</label>
@@ -473,10 +519,11 @@
     <div id="modal-novo-cliente" class="modal-backdrop" style="display:none">
         <div class="glass-card modal-window">
             <div class="modal-header">
-                <h3>Novo Cadastro</h3>
+                <h3 id="titulo-modal-cliente">Novo Cadastro</h3>
                 <button onclick="fecharModal('modal-novo-cliente')" class="close-btn">×</button>
             </div>
             <div class="modal-body">
+                <input type="hidden" id="id-cliente-edicao">
                 <label class="label-small">Nome Completo *</label>
                 <input type="text" id="novo-cli-nome" class="modern-input" placeholder="Maria Silva">
                 
@@ -489,7 +536,7 @@
                 <label class="label-small">Foto de Perfil (Opcional)</label>
                 <input type="file" id="novo-cli-foto" accept="image/*" class="modern-input">
                 
-                <button onclick="salvarNovoClienteModal()" class="btn-glow full-width mt-15">CADASTRAR</button>
+                <button onclick="salvarNovoClienteModal()" class="btn-glow full-width mt-15">SALVAR DADOS</button>
             </div>
         </div>
     </div>
