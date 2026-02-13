@@ -3,10 +3,10 @@
    ========================================= */
 :root {
     /* Cores Base */
-    --bg-dark: #09090b; /* Fundo limpo */
+    --bg-dark: #09090b; /* Fundo limpo, sem ruído */
     --bg-card: rgba(23, 23, 23, 0.6);
     
-    /* CORES VIBRANTES E ACESAS */
+    /* CORES VIBRANTES E ACESAS (ATUALIZADAS) */
     --primary: #d946ef; /* Rosa choque */
     --primary-hover: #c026d3;
     --primary-glow: rgba(217, 70, 239, 0.6);
@@ -48,17 +48,16 @@ body {
     position: relative; 
     font-size: 13px; 
     font-variant-numeric: tabular-nums;
+    /* Seleção de texto rosa */
     ::selection { background: var(--primary); color: white; }
 }
 
-/* (Textura de ruído removida aqui para deixar o fundo limpo) */
-
 /* =========================================
-   2. UI GERAL
+   2. UI GERAL & EFEITOS
    ========================================= */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; transition: background 0.3s; }
 ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
 
 .loader-overlay {
@@ -75,7 +74,7 @@ body {
 }
 @keyframes spin { 100% { transform: rotate(360deg); } }
 
-/* Fundo Animado (Blobs mais intensos) */
+/* Fundo Animado (Blobs) */
 .bg-blobs { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; pointer-events: none; }
 .blob { position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.4; animation: float 15s infinite alternate ease-in-out; }
 .blob-1 { width: 500px; height: 500px; background: var(--primary); top: -150px; left: -150px; }
@@ -83,7 +82,7 @@ body {
 .blob-3 { width: 300px; height: 300px; background: #8b5cf6; top: 40%; left: 40%; animation-delay: 4s; opacity: 0.2; }
 @keyframes float { 0% { transform: translate(0, 0); } 100% { transform: translate(50px, 70px); } }
 
-/* Glass Panel */
+/* Glass Panel (Refinado) */
 .glass-panel {
     background: var(--glass); 
     backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
@@ -130,6 +129,7 @@ body {
     background: var(--glass); border: 1px solid var(--border);
     padding: 35px; border-radius: 24px; text-align: center; cursor: pointer;
     width: 170px; transition: all 0.3s;
+    position: relative; overflow: hidden; /* Ripple */
 }
 .device-option:hover { 
     background: rgba(217, 70, 239, 0.15); border-color: var(--primary); 
@@ -154,6 +154,7 @@ body {
     display: flex; align-items: center; gap: 12px; padding: 12px 14px;
     color: var(--text-muted); text-decoration: none; border-radius: 12px;
     margin-bottom: 5px; cursor: pointer; transition: all 0.2s ease; font-size: 14px;
+    position: relative; overflow: hidden; /* Ripple */
 }
 .nav-item:hover { background: rgba(255,255,255,0.08); color: white; transform: translateX(4px); }
 .nav-item.active { 
@@ -162,21 +163,22 @@ body {
 }
 .nav-item i { width: 18px; }
 
-/* BOTÕES ESPECIAIS SIDEBAR */
+/* BOTÕES SIDEBAR */
 .btn-logout {
     width: 100%; background: rgba(244,63,94,0.15); color: var(--danger);
     border: 1px solid rgba(244,63,94,0.3); padding: 12px; border-radius: 12px;
     cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px;
-    transition: 0.3s; font-weight: 700;
+    transition: 0.3s; font-weight: 700; position: relative; overflow: hidden;
 }
 .btn-logout:hover { background: var(--danger); color: white; box-shadow: 0 5px 15px rgba(244, 63, 94, 0.4); transform: translateY(-2px); border-color: var(--danger); }
 
 .btn-backup {
     width: 100%; background: rgba(255,255,255,0.08); color: white;
     border: 1px solid var(--border); padding: 10px; border-radius: 10px;
-    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; margin-bottom: 10px; transition: 0.2s;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; margin-bottom: 10px; transition: 0.2s; position: relative; overflow: hidden;
 }
 .btn-backup:hover { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.4); }
+
 
 .main-content { flex: 1; display: flex; flex-direction: column; gap: 8px; overflow: hidden; position: relative; }
 .top-header { height: 70px; padding: 0 25px; display: flex; justify-content: space-between; align-items: center; }
@@ -205,16 +207,24 @@ body {
     outline: none; 
 }
 input[type="file"] { padding-top: 8px; cursor: pointer; }
+
+/* CORREÇÃO DO SELECT (MENU SUSPENSO) PARA O DARK MODE */
+select.modern-input option,
+select.modern-input optgroup {
+    background-color: var(--bg-dark); /* Fundo escuro */
+    color: white; /* Texto branco */
+}
+
 .form-group { display: flex; gap: 10px; }
 
-/* -- BOTÃO PADRÃO (PRIMARY) -- */
+/* -- BOTÃO PADRÃO (PRIMARY) - CORES FORTES -- */
 .btn-primary { 
     background: linear-gradient(135deg, var(--secondary), var(--secondary-hover)); 
     color: white; border: none; padding: 0 20px; 
     border-radius: 10px; cursor: pointer; font-weight: 700; white-space: nowrap; 
     font-size: 13px; height: 45px; margin-top: 3px;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 15px var(--secondary-glow); /* Sombra colorida */
+    box-shadow: 0 4px 15px var(--secondary-glow); /* Sombra vibrante */
     position: relative; overflow: hidden;
 }
 .btn-primary:hover { 
@@ -228,7 +238,7 @@ input[type="file"] { padding-top: 8px; cursor: pointer; }
 .btn-icon { 
     background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); width: 45px; height: 45px; 
     border-radius: 10px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-top: 3px;
-    transition: 0.2s;
+    transition: 0.2s; position: relative; overflow: hidden;
 }
 .btn-icon:hover { background: var(--primary); border-color: var(--primary); box-shadow: 0 0 15px var(--primary-glow); transform: scale(1.05); }
 
@@ -239,6 +249,7 @@ input[type="file"] { padding-top: 8px; cursor: pointer; }
     border: none; border-radius: 12px; color: white; font-weight: 800; cursor: pointer;
     transition: all 0.2s; font-size: 14px; letter-spacing: 0.5px;
     box-shadow: 0 5px 20px var(--primary-glow); /* Glow forte */
+    position: relative; overflow: hidden;
 }
 .btn-glow:hover { transform: translateY(-3px); box-shadow: 0 10px 40px var(--primary-glow); filter: brightness(1.1); }
 .btn-glow:active { transform: scale(0.97); }
@@ -251,6 +262,7 @@ input[type="file"] { padding-top: 8px; cursor: pointer; }
     color: white; font-weight: 800; cursor: pointer; 
     box-shadow: 0 5px 20px var(--success-glow); 
     transition: all 0.3s; font-size: 15px; letter-spacing: 0.5px;
+    position: relative; overflow: hidden;
 }
 .btn-checkout:hover { transform: translateY(-3px) scale(1.01); box-shadow: 0 10px 40px var(--success-glow); }
 .btn-checkout:active { transform: scale(0.97); }
@@ -261,12 +273,13 @@ input[type="file"] { padding-top: 8px; cursor: pointer; }
     color: white; border: none; padding: 12px; border-radius: 10px; 
     cursor: pointer; font-weight: 700; font-size: 13px; transition: 0.2s; 
     box-shadow: 0 4px 10px rgba(244, 63, 94, 0.3);
+    position: relative; overflow: hidden;
 }
 .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(244, 63, 94, 0.5); }
 .btn-danger:active { transform: scale(0.96); }
 
 /* -- BOTÕES PEQUENOS -- */
-.btn-small { padding: 6px 12px; font-size: 11px; border-radius: 6px; border: none; cursor: pointer; margin-right: 5px; color: white; font-weight: 600; transition: 0.2s; }
+.btn-small { padding: 6px 12px; font-size: 11px; border-radius: 6px; border: none; cursor: pointer; margin-right: 5px; color: white; font-weight: 600; transition: 0.2s; position: relative; overflow: hidden; }
 .btn-small:hover { transform: translateY(-2px); filter: brightness(1.1); }
 .bg-purple { background: var(--secondary); }
 .bg-green { background: var(--success); }
@@ -287,7 +300,7 @@ input[type="file"] { padding-top: 8px; cursor: pointer; }
 .icon-box.info { color: #60a5fa; }
 .kpi-card:hover .icon-box.info { background: #60a5fa; box-shadow: 0 0 15px rgba(96, 165, 250, 0.5); }
 
-/* Animação Cascata */
+/* ANIMAÇÃO CASCATA */
 @keyframes slideInUp {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
