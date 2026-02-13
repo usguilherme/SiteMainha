@@ -167,16 +167,62 @@ function resetarSistema() {
 }
 
 function fazerBackup() {
-    const dados = JSON.stringify(store);
-    const blob = new Blob([dados], {type: "application/json"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `backup_cassia_nunes_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    dispararToast("Backup baixado com sucesso!");
+    // Verifica se a biblioteca carregou (segurança)
+    if (typeof XLSX === 'undefined') {
+        alert("Erro: Biblioteca Excel não carregada. Verifique se adicionou o script no HTML.");
+        return;
+    }
+
+    const wb = XLSX.utils.book_new(); // Cria o arquivo Excel
+    const dataHoje = new Date().toISOString().split('T')[0];
+
+    // --- ABA 1: CLIENTES ---
+    const dadosClientes = store.clientes.map(c => ({
+        "Nome": c.nome,
+        "Telefone": c.telefone,
+        "Pontos Fidelidade": c.pontos || 0,
+        "Última Visita": formatarData(c.ultimaVisita),
+        "Previsão Retorno": formatarData(c.previsaoRetorno),
+        "Data Cadastro": c.dataCadastro ? formatarData(c.dataCadastro.split('T')[0]) : '-'
+    }));
+    const wsClientes = XLSX.utils.json_to_sheet(dadosClientes);
+    XLSX.utils.book_append_sheet(wb, wsClientes, "Clientes VIP");
+
+    // --- ABA 2: VENDAS (ATENDIMENTOS) ---
+    const dadosVendas = store.atendimentos.map(a => ({
+        "Data": formatarData(a.data),
+        "Hora": a.hora,
+        "Cliente": a.nomeCliente,
+        "Itens Vendidos": a.servicos ? a.servicos.map(s => s.nome).join(", ") : "",
+        "Total (R$)": a.total,
+        "Forma Pagto": a.pagamento,
+        "Observações": a.obs
+    }));
+    const wsVendas = XLSX.utils.json_to_sheet(dadosVendas);
+    XLSX.utils.book_append_sheet(wb, wsVendas, "Relatório Vendas");
+
+    // --- ABA 3: ESTOQUE ---
+    const dadosEstoque = store.estoque.map(e => ({
+        "Produto": e.nome,
+        "Quantidade Atual": e.qtd,
+        "Preço Venda (R$)": e.preco
+    }));
+    const wsEstoque = XLSX.utils.json_to_sheet(dadosEstoque);
+    XLSX.utils.book_append_sheet(wb, wsEstoque, "Controle Estoque");
+
+    // --- ABA 4: DESPESAS ---
+    const dadosDespesas = store.despesas.map(d => ({
+        "Data": formatarData(d.data),
+        "Descrição": d.descricao,
+        "Categoria": d.categoria,
+        "Valor (R$)": d.valor
+    }));
+    const wsDespesas = XLSX.utils.json_to_sheet(dadosDespesas);
+    XLSX.utils.book_append_sheet(wb, wsDespesas, "Despesas");
+
+    // --- DOWNLOAD ---
+    XLSX.writeFile(wb, `Gestao_CassiaNunes_${dataHoje}.xlsx`);
+    dispararToast("📁 Planilha Excel gerada e baixada!");
 }
 
 function inicializarSistema() {
