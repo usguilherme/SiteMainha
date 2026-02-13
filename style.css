@@ -206,10 +206,14 @@ input[type="file"] { padding-top: 8px; cursor: pointer; }
 .search-input { background: transparent; border: none; color: white; font-size: 13px; outline: none; width: 180px; }
 .table-header { display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center; }
 
+/* AGENDA HEADER FLEX (NOVO) */
+.agenda-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+
 .btn-small { padding: 5px 10px; font-size: 11px; border-radius: 6px; border: none; cursor: pointer; margin-right: 5px; color: white; }
 .bg-purple { background: var(--secondary); }
 .bg-green { background: #25D366; }
 .bg-yellow { background: #f59e0b; color: white; }
+.bg-glass { background: rgba(255,255,255,0.1); color: var(--text-muted); }
 .btn-danger { background: var(--danger); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; }
 
 /* FINANCEIRO */
@@ -314,8 +318,9 @@ body.mobile-mode .finance-cards {
     grid-template-columns: 1fr;
 }
 
-/* Correção Específica para Aba DESPESAS */
+/* Correção Específica para Aba DESPESAS e ESTOQUE */
 body.mobile-mode #despesas .grid-2,
+body.mobile-mode #estoque .grid-2,
 body.mobile-mode .grid-2 {
     display: flex;
     flex-direction: column;
@@ -338,12 +343,14 @@ body.mobile-mode #servicos .form-inline input {
     width: 100%;
     margin: 0;
 }
-body.mobile-mode #servicos .action-buttons {
+body.mobile-mode #servicos .action-buttons,
+body.mobile-mode #estoque .action-buttons {
     display: flex;
     gap: 10px;
     width: 100%;
 }
-body.mobile-mode #servicos .action-buttons button {
+body.mobile-mode #servicos .action-buttons button,
+body.mobile-mode #estoque .action-buttons button {
     flex: 1;
 }
 body.mobile-mode #lista-servicos-cad.grid-cards {
@@ -368,7 +375,7 @@ body.mobile-mode .modern-table td {
 /* Modal em tela cheia no mobile */
 body.mobile-mode .modal-window { width: 95%; margin: 10px; max-height: 90vh; overflow-y: auto; }
 
-/* Botão Sair no Header Mobile */
+/* Botão Sair no Header Mobile (Corrigido) */
 body.mobile-mode .mobile-logout-icon { display: block; margin-left: 10px; color: var(--danger); cursor: pointer; }
 
 /* Inputs maiores para dedo */
