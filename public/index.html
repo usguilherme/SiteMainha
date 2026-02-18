@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cassia Nunes | Gestão Pro</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script> 
+    
+    <link rel="stylesheet" href="css/style.css">
+    
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+
+    <div id="device-selection">
+        <div class="logo-circle" style="transform: scale(1.5); margin-bottom: 20px;">CN</div>
+        <h2 style="font-family: var(--font-display); font-size: 24px;">Como você vai usar?</h2>
+        <p style="color: var(--text-muted); margin-bottom: 30px;">Otimizaremos a interface para você</p>
+        
+        <div class="device-cards">
+            <div class="device-option" onclick="escolherDispositivo('pc')">
+                <i data-lucide="monitor"></i>
+                <h3>Computador</h3>
+            </div>
+            <div class="device-option" onclick="escolherDispositivo('mobile')">
+                <i data-lucide="smartphone"></i>
+                <h3>Celular</h3>
+            </div>
+        </div>
+    </div>
+
+    <div id="loader-overlay" class="loader-overlay">
+        <div class="loader-content">
+            <div class="loader-circle"></div>
+            <h2>CASSIA NUNES</h2>
+            <p>Sincronizando dados...</p>
+        </div>
+    </div>
+
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div id="login-overlay" class="login-overlay" style="display:none">
+        <div class="glass-card login-card">
+            <div class="login-header">
+                <div class="logo-circle">CN</div>
+                <h1>Acesso Seguro</h1>
+                <p>Entre com suas credenciais</p>
+            </div>
+            
+            <div class="input-wrapper">
+                <i data-lucide="mail" class="input-icon"></i>
+                <input type="email" id="input-email" placeholder="Seu E-mail" autofocus>
+            </div>
+
+            <div class="input-wrapper">
+                <i data-lucide="lock" class="input-icon"></i>
+                <input type="password" id="input-senha" placeholder="Sua Senha" onkeyup="if(event.key==='Enter') verificarSenha()">
+            </div>
+
+            <button onclick="verificarSenha()" class="btn-glow">ENTRAR</button>
+            <p id="erro-senha" class="error-msg">Dados Incorretos</p>
+        </div>
+    </div>
+
+    <div class="app-layout">
+        <aside class="sidebar glass-panel">
+            <div class="sidebar-header">
+                <div class="brand">
+                    <span>CASSIA</span> NUNES
+                </div>
+                <div class="status-dot online" title="Sistema Online"></div>
+            </div>
+            
+            <nav class="nav-menu">
+                <p class="nav-title">DIA A DIA</p>
+                <a onclick="abrirAba('dashboard')" class="nav-item active">
+                    <i data-lucide="layout-grid"></i> Visão Geral
+                </a>
+                <a onclick="abrirAba('agenda')" class="nav-item">
+                    <i data-lucide="calendar-days"></i> Agenda
+                </a>
+                <a onclick="abrirAba('novo_atendimento')" class="nav-item">
+                    <i data-lucide="sparkles"></i> Caixa / Venda
+                </a>
+                
+                <p class="nav-title">GESTÃO</p>
+                <a onclick="abrirAba('clientes')" class="nav-item">
+                    <i data-lucide="users"></i> Clientes VIP
+                </a>
+                <a onclick="abrirAba('estoque')" class="nav-item">
+                    <i data-lucide="package"></i> Estoque
+                </a>
+                <a onclick="abrirAba('financeiro')" class="nav-item">
+                    <i data-lucide="trending-up"></i> Financeiro
+                </a>
+                <a onclick="abrirAba('servicos')" class="nav-item">
+                    <i data-lucide="scissors"></i> Serviços
+                </a>
+                <a onclick="abrirAba('despesas')" class="nav-item">
+                    <i data-lucide="receipt"></i> Despesas
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button onclick="abrirModalConfig()" class="btn-backup" title="Configurar Pix e Dados" style="margin-bottom: 5px;">
+                    <i data-lucide="settings"></i> Configurações
+                </button>
+                <button onclick="fazerBackup()" class="btn-backup" title="Baixar planilha Excel">
+                    <i data-lucide="file-spreadsheet"></i> Backup Excel
+                </button>
+                <div style="font-size:10px; color:rgba(255,255,255,0.3); margin-bottom:8px; text-align:center" id="user-email-display"></div>
+                <button onclick="logout()" class="btn-logout">
+                    <i data-lucide="log-out"></i> Sair
+                </button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-header glass-panel">
+                <div class="header-left">
+                    <h2 id="titulo-pagina">Visão Geral</h2>
+                    <div id="data-hoje" class="date-badge">Carregando...</div>
+                </div>
+                <div class="user-profile">
+                    <div class="notification-btn" title="Resetar Dados (Teste)" onclick="resetarSistema()">
+                        <i data-lucide="trash-2" style="color: #f43f5e;"></i>
+                    </div>
+                    <div class="avatar">CN</div>
+                    <i data-lucide="log-out" class="mobile-logout-icon" onclick="logout()"></i>
+                </div>
+            </header>
+
+            <div class="content-scroll">
+                
+                <section id="dashboard" class="aba ativa fade-in">
+                    <div class="glass-panel mb-15" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 25px;">
+                        <h3 class="text-gradient" style="margin:0;">Desempenho da Unidade</h3>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span class="label-small">Período dos Gráficos:</span>
+                            <input type="date" id="dash-grafico-inicio" class="modern-input compact" style="width: auto;" onchange="atualizarGraficos()">
+                            <span class="text-muted">até</span>
+                            <input type="date" id="dash-grafico-fim" class="modern-input compact" style="width: auto;" onchange="atualizarGraficos()">
+                            <button onclick="setPeriodoGrafico('hoje')" class="btn-small bg-purple">Hoje</button>
+                            <button onclick="setPeriodoGrafico('7dias')" class="btn-small bg-glass">7 Dias</button>
+                        </div>
+                    </div>
+
+                    <div class="kpi-grid">
+                        <div class="kpi-card glass-panel gradient-1">
+                            <div class="icon-box"><i data-lucide="dollar-sign"></i></div>
+                            <div>
+                                <span>Faturamento (Hoje)</span>
+                                <h3 id="dash-faturamento">R$ 0,00</h3>
+                            </div>
+                        </div>
+                        <div class="kpi-card glass-panel">
+                            <div class="icon-box"><i data-lucide="calendar-check"></i></div>
+                            <div>
+                                <span>Agendamentos</span>
+                                <h3 id="dash-atendimentos">0</h3>
+                            </div>
+                        </div>
+                        <div class="kpi-card glass-panel">
+                            <div class="icon-box warning"><i data-lucide="hourglass"></i></div>
+                            <div>
+                                <span>Retornos Pendentes</span>
+                                <h3 id="dash-retornos">0</h3>
+                            </div>
+                        </div>
+                        <div class="kpi-card glass-panel">
+                            <div class="icon-box info"><i data-lucide="award"></i></div>
+                            <div>
+                                <span>Pontos Distribúidos</span>
+                                <h3 id="dash-pontos">0</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="charts-grid">
+                        <div class="chart-box glass-panel">
+                            <h4>🔥 Serviços Mais Realizados</h4>
+                            <div class="canvas-wrapper"><canvas id="chartTopServicos"></canvas></div>
+                        </div>
+                        <div class="chart-box glass-panel">
+                            <h4>📈 Faturamento no Período</h4>
+                            <div class="canvas-wrapper"><canvas id="chartSemanal"></canvas></div>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel mt-15">
+                        <div class="table-header">
+                            <h3><i data-lucide="history" style="width:16px"></i> Clientes para Retornar</h3>
+                            <div class="filter-controls">
+                                <span class="label-small">Filtrar Lista:</span>
+                                <input type="date" id="dash-filtro-data" class="modern-input compact" onchange="filtrarRetornosDashboard()">
+                                <button onclick="limparFiltroRetorno()" class="btn-small bg-glass">Todos</button>
+                            </div>
+                        </div>
+                        <div id="lista-retornos-dashboard" class="simple-list mt-10"></div>
+                    </div>
+                </section>
+
+                <section id="agenda" class="aba fade-in" style="display:none">
+                    <div class="glass-panel" style="min-height: 100%;">
+                        <div class="agenda-header-flex">
+                            <div>
+                                <h3 class="text-gradient">Agenda</h3>
+                                <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
+                                    <input type="date" id="agenda-date-input" class="modern-input" style="width: 150px;" onchange="renderAgenda()">
+                                    <span id="agenda-dia-semana" class="text-muted" style="font-size: 12px;"></span>
+                                </div>
+                            </div>
+                            <button onclick="abrirAba('novo_atendimento')" class="btn-primary">+ Novo</button>
+                        </div>
+                        <div class="timeline-container mt-20" id="lista-agenda">
+                            </div>
+                    </div>
+                </section>
+
+                <section id="novo_atendimento" class="aba fade-in" style="display:none">
+                    <div class="pdv-layout">
+                        <div class="pdv-left glass-panel">
+                            <div class="step-box">
+                                <span class="step-num">1</span>
+                                <h3>Quem é a cliente?</h3>
+                                <div class="form-group">
+                                    <select id="pdv-cliente" class="modern-input"></select>
+                                    <button onclick="abrirModalCliente()" class="btn-icon" title="Cadastrar Nova"><i data-lucide="user-plus"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="step-box">
+                                <span class="step-num">2</span>
+                                <h3>O que ela fez / Levou?</h3>
+                                <div class="form-group">
+                                    <select id="pdv-servico" class="modern-input"></select>
+                                    <button onclick="adicionarAoCarrinho()" class="btn-primary">Adicionar</button>
+                                </div>
+                            </div>
+
+                            <div class="divider"></div>
+
+                            <h3>Pós-Venda Inteligente</h3>
+                            <div class="grid-2">
+                                <div>
+                                    <label class="label-small">Retorno em (dias)</label>
+                                    <input type="number" id="pdv-dias-retorno" class="modern-input" placeholder="Ex: 30" oninput="calcularDataRetorno()">
+                                </div>
+                                <div>
+                                    <label class="label-small">Data Calculada</label>
+                                    <input type="date" id="pdv-retorno" class="modern-input">
+                                </div>
+                            </div>
+                            <div class="mt-10">
+                                <label class="label-small">Observações</label>
+                                <input type="text" id="pdv-obs" class="modern-input" placeholder="Ex: Usou Coloração 7.1...">
+                            </div>
+                        </div>
+
+                        <div class="pdv-right glass-panel">
+                            <div class="ticket-header">
+                                <h3>Resumo</h3>
+                                <span class="badge">Aberto</span>
+                            </div>
+                            <ul id="lista-carrinho" class="carrinho-list">
+                                <li class="empty-state">Selecione os serviços...</li>
+                            </ul>
+                            
+                            <div class="checkout-area">
+                                <div class="total-display">
+                                    <span>Total a Pagar</span>
+                                    <h2 id="pdv-total">R$ 0,00</h2>
+                                </div>
+                                
+                                <label class="label-small">Forma de Pagamento</label>
+                                <select id="pdv-pagamento" class="modern-input mb-10" onchange="toggleTroco()">
+                                    <option value="Dinheiro">💵 Dinheiro</option>
+                                    <option value="Pix">💠 Pix</option>
+                                    <option value="Cartão Crédito">💳 Crédito</option>
+                                    <option value="Cartão Débito">💳 Débito</option>
+                                </select>
+
+                                <div id="area-troco" class="troco-box">
+                                    <div class="flex-between">
+                                        <div style="flex:1; margin-right:10px">
+                                            <label class="label-small">Recebido</label>
+                                            <input type="number" id="pdv-valor-pago" class="modern-input compact" placeholder="0,00" oninput="calcularTroco()">
+                                        </div>
+                                        <div style="flex:1; text-align:right">
+                                            <label class="label-small">Troco</label>
+                                            <h3 id="pdv-troco-display" class="text-success">R$ 0,00</h3>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="area-pix" class="pix-box" style="display:none; text-align:center; margin-bottom:10px;">
+                                    <div id="qrcode-container" style="background:white; padding:10px; border-radius:8px; display:inline-block; margin-bottom:5px;">
+                                        <canvas id="qr-pix"></canvas>
+                                    </div>
+                                    <input type="text" id="pix-copia-cola" class="modern-input" readonly onclick="this.select()" style="font-size:10px;">
+                                    <button onclick="copiarPix()" class="btn-small bg-green full-width mt-10">Copiar Código Pix</button>
+                                </div>
+
+                                <button onclick="finalizarVenda()" class="btn-checkout">FINALIZAR</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="clientes" class="aba fade-in" style="display:none">
+                    <div class="glass-panel">
+                        <div class="table-header">
+                            <div class="search-box">
+                                <i data-lucide="search"></i>
+                                <input type="text" id="busca-cliente" placeholder="Buscar por nome..." onkeyup="filtrarClientes()" class="search-input">
+                            </div>
+                            <button onclick="abrirModalCliente()" class="btn-primary">+ Novo</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="modern-table">
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Fidelidade</th>
+                                        <th>Última Visita</th>
+                                        <th>Próximo Retorno</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-clientes"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="estoque" class="aba fade-in" style="display:none">
+                    <div class="glass-panel form-inline mb-15">
+                        <input type="hidden" id="id-produto-edicao">
+                        <div class="grid-2" style="grid-template-columns: 2fr 1fr 1fr auto; width: 100%;">
+                            <input type="text" id="prod-nome" placeholder="Nome do Produto (Ex: Shampoo)" class="modern-input">
+                            <input type="number" id="prod-qtd" placeholder="Qtd" class="modern-input">
+                            <input type="number" id="prod-preco" placeholder="Valor Venda (R$)" class="modern-input">
+                            
+                            <div class="action-buttons">
+                                <button onclick="salvarProdutoEstoque()" id="btn-salvar-produto" class="btn-primary">Salvar</button>
+                                <button onclick="cancelarEdicaoProduto()" id="btn-cancelar-produto" class="btn-danger" style="display:none">✕</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-panel">
+                        <h3><i data-lucide="package" style="width:16px"></i> Itens em Estoque</h3>
+                        <div class="table-responsive">
+                            <table class="modern-table">
+                                <thead>
+                                    <tr>
+                                        <th>Produto</th>
+                                        <th>Quantidade</th>
+                                        <th>Preço Venda</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-estoque">
+                                    </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="financeiro" class="aba fade-in" style="display:none">
+                    <div class="glass-panel mb-15" style="border: 1px solid rgba(255,255,255,0.1);">
+                        <h4 style="margin-bottom: 10px; color: var(--text-muted);">Acesso Rápido</h4>
+                        <div class="grid-2">
+                            <button onclick="abrirAba('despesas')" class="btn-danger full-width" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                                <i data-lucide="receipt" style="width:16px"></i> Lançar Despesa
+                            </button>
+                            <button onclick="abrirAba('servicos')" class="btn-primary full-width" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                                <i data-lucide="scissors" style="width:16px"></i> Editar Serviços
+                            </button>
+                        </div>
+                        <button onclick="fazerBackup()" class="btn-small mt-15 full-width" style="background: #334155;">
+                            <i data-lucide="file-spreadsheet"></i> Exportar Dados para Excel
+                        </button>
+                    </div>
+
+                    <div class="finance-cards">
+                        <div class="fin-card income">
+                            <span>Entradas (Mês)</span>
+                            <h2 id="fin-entradas">R$ 0,00</h2>
+                        </div>
+                        <div class="fin-card expense">
+                            <span>Saídas (Mês)</span>
+                            <h2 id="fin-saidas">R$ 0,00</h2>
+                        </div>
+                        <div class="fin-card profit">
+                            <span>Lucro Líquido</span>
+                            <h2 id="fin-lucro">R$ 0,00</h2>
+                        </div>
+                    </div>
+                    <div class="glass-panel mt-15">
+                        <h3>Extrato de Lançamentos</h3>
+                        <div class="table-responsive">
+                            <table class="modern-table">
+                                <thead><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th>Valor</th></tr></thead>
+                                <tbody id="tabela-financeiro"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="servicos" class="aba fade-in" style="display:none">
+                    <div class="glass-panel form-inline">
+                        <input type="hidden" id="id-servico-edicao">
+                        <input type="text" id="serv-nome" placeholder="Nome do Serviço" class="modern-input">
+                        <input type="number" id="serv-preco" placeholder="Valor (R$)" class="modern-input">
+                        
+                        <div class="action-buttons">
+                            <button onclick="salvarServicoCad()" id="btn-salvar-servico" class="btn-primary">Salvar</button>
+                            <button onclick="cancelarEdicaoServico()" id="btn-cancelar-servico" class="btn-danger" style="display:none">✕</button>
+                        </div>
+                    </div>
+                    <div id="lista-servicos-cad" class="grid-cards mt-15"></div>
+                    <button onclick="abrirAba('financeiro')" class="btn-small mt-15 mobile-only" style="width:100%; opacity:0.7">Voltar ao Menu</button>
+                </section>
+
+                <section id="despesas" class="aba fade-in" style="display:none">
+                    <div class="glass-panel">
+                        <h3 id="titulo-form-despesa">Registrar Saída</h3>
+                        <input type="hidden" id="id-despesa-edicao"> 
+                        <div class="grid-2">
+                            <input type="text" id="desp-desc" placeholder="Descrição" class="modern-input">
+                            <input type="number" id="desp-valor" placeholder="Valor (R$)" class="modern-input">
+                            <input type="date" id="desp-data" class="modern-input">
+                            <select id="desp-cat" class="modern-input">
+                                <option value="Fixa">Custo Fixo</option>
+                                <option value="Produto">Produtos</option>
+                                <option value="Pessoal">Pessoal</option>
+                            </select>
+                        </div>
+                        
+                        <div class="grid-2 mt-10">
+                            <button onclick="lancarDespesa()" id="btn-salvar-despesa" class="btn-danger full-width">LANÇAR</button>
+                            <button onclick="cancelarEdicaoDespesa()" id="btn-cancelar-despesa" class="btn-small" style="display:none; background:#444">CANCELAR</button>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel mt-15">
+                        <h3>Histórico</h3>
+                        <div class="table-responsive">
+                            <table class="modern-table">
+                                <thead><tr><th>Data</th><th>Descrição</th><th>Valor</th><th>Ação</th></tr></thead>
+                                <tbody id="lista-gestao-despesas"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <button onclick="abrirAba('financeiro')" class="btn-small mt-15 mobile-only" style="width:100%; opacity:0.7">Voltar ao Menu</button>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <nav class="mobile-bottom-nav">
+        <a onclick="abrirAba('dashboard')" class="mobile-nav-item active">
+            <i data-lucide="layout-grid"></i> Início
+        </a>
+        <a onclick="abrirAba('agenda')" class="mobile-nav-item">
+            <i data-lucide="calendar-days"></i> Agenda
+        </a>
+        <a onclick="abrirAba('novo_atendimento')" class="mobile-nav-item">
+            <i data-lucide="sparkles"></i> Venda
+        </a>
+        <a onclick="abrirAba('estoque')" class="mobile-nav-item">
+            <i data-lucide="package"></i> Estoque
+        </a>
+        <a onclick="abrirAba('financeiro')" class="mobile-nav-item">
+            <i data-lucide="menu"></i> +Menu
+        </a>
+    </nav>
+
+    <div id="modal-anamnese" class="modal-backdrop" style="display:none">
+        <div class="glass-card modal-window">
+            <div class="modal-header">
+                <h3>Ficha do Cliente</h3>
+                <button onclick="fecharModal('modal-anamnese')" class="close-btn">×</button>
+            </div>
+            <div class="modal-body">
+                <h2 id="anamnese-cliente-nome" class="text-gradient">Cliente</h2>
+                <div class="tab-controls">
+                    <button class="tab-btn active" onclick="trocarAbaAnamnese('compras')">Compras & Serviços</button>
+                    <button class="tab-btn" onclick="trocarAbaAnamnese('historico')">Histórico Téc.</button>
+                    <button class="tab-btn" onclick="trocarAbaAnamnese('galeria')">Galeria (Fotos)</button>
+                </div>
+                
+                <div id="tab-compras" style="display:block">
+                    <div id="lista-compras-servicos" class="historico-box" style="max-height: 300px;">
+                    </div>
+                </div>
+
+                <div id="tab-historico" style="display:none">
+                    <div id="historico-lista" class="historico-box"></div>
+                    <div class="new-entry">
+                        <label class="label-small">Novo Registro Técnico</label>
+                        <input type="text" id="anam-titulo" placeholder="Procedimento" class="modern-input">
+                        <textarea id="anam-obs" placeholder="Detalhes (Cor, Marca, Reação...)" class="modern-input"></textarea>
+                        <button onclick="salvarAnamnese()" class="btn-glow full-width mt-10">SALVAR HISTÓRICO</button>
+                    </div>
+                </div>
+
+                <div id="tab-galeria" style="display:none">
+                    <div id="galeria-grid" class="gallery-grid"></div>
+                    <div class="new-entry">
+                        <label class="label-small">Adicionar Foto (Antes/Depois)</label>
+                        <input type="file" id="input-foto-galeria" accept="image/*" class="modern-input">
+                        <input type="text" id="desc-foto-galeria" placeholder="Descrição (Ex: Antes do Corte)" class="modern-input mt-10">
+                        <button onclick="salvarFotoGaleria()" class="btn-glow full-width mt-10">SALVAR FOTO</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-novo-cliente" class="modal-backdrop" style="display:none">
+        <div class="glass-card modal-window">
+            <div class="modal-header">
+                <h3 id="titulo-modal-cliente">Novo Cadastro</h3>
+                <button onclick="fecharModal('modal-novo-cliente')" class="close-btn">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="id-cliente-edicao">
+                <label class="label-small">Nome Completo *</label>
+                <input type="text" id="novo-cli-nome" class="modern-input" placeholder="Maria Silva">
+                
+                <label class="label-small">WhatsApp (com DDD)</label>
+                <input type="tel" id="novo-cli-tel" class="modern-input" placeholder="11999999999">
+                
+                <label class="label-small">Data de Nascimento (Opcional)</label>
+                <input type="date" id="novo-cli-nasc" class="modern-input">
+
+                <label class="label-small">Foto de Perfil (Opcional)</label>
+                <input type="file" id="novo-cli-foto" accept="image/*" class="modern-input">
+                
+                <button onclick="salvarNovoClienteModal()" class="btn-glow full-width mt-15">SALVAR DADOS</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-config" class="modal-backdrop" style="display:none">
+        <div class="glass-card modal-window">
+            <div class="modal-header">
+                <h3>⚙️ Configurações do Sistema</h3>
+                <button onclick="fecharModal('modal-config')" class="close-btn">×</button>
+            </div>
+            <div class="modal-body">
+                <h4 style="color: var(--primary); margin-bottom: 10px;">Dados para Recebimento (Pix)</h4>
+                
+                <label class="label-small">Chave Pix (CPF, Email, Celular ou Aleatória)</label>
+                <input type="text" id="cfg-chave-pix" class="modern-input" placeholder="Ex: 123.456.789-00">
+                
+                <label class="label-small">Nome do Beneficiário (Como no Banco)</label>
+                <input type="text" id="cfg-nome-pix" class="modern-input" placeholder="Ex: Cassia Nunes">
+                
+                <label class="label-small">Cidade do Beneficiário</label>
+                <input type="text" id="cfg-cidade-pix" class="modern-input" placeholder="Ex: Campina Grande">
+                
+                <div class="divider"></div>
+
+                <h4 style="color: var(--warning); margin-bottom: 10px;">Metas</h4>
+                <label class="label-small">Meta de Faturamento Mensal (R$)</label>
+                <input type="number" id="cfg-meta-mensal" class="modern-input" placeholder="Ex: 5000.00">
+
+                <button onclick="salvarConfiguracoes()" class="btn-glow full-width mt-15">SALVAR CONFIGURAÇÕES</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
+    <script src="js/script.js"></script>
+</body>
+</html>
