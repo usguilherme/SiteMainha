@@ -1,0 +1,23 @@
+<div class="glass-panel">
+    <div class="table-header">
+        <div class="search-box">
+            <i data-lucide="search"></i>
+            <input type="text" id="busca-cliente" placeholder="Buscar por nome..." onkeyup="filtrarClientes()" class="search-input">
+        </div>
+        <button onclick="abrirModalCliente()" class="btn-primary">+ Novo</button>
+    </div>
+    <div class="table-responsive">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Fidelidade</th>
+                    <th>Última Visita</th>
+                    <th>Próximo Retorno</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-clientes"></tbody>
+        </table>
+    </div>
+</div>

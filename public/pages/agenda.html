@@ -1,0 +1,14 @@
+<div class="glass-panel" style="min-height: 100%;">
+    <div class="agenda-header-flex">
+        <div>
+            <h3 class="text-gradient">Agenda</h3>
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
+                <input type="date" id="agenda-date-input" class="modern-input" style="width: 150px;" onchange="renderAgenda()">
+                <span id="agenda-dia-semana" class="text-muted" style="font-size: 12px;"></span>
+            </div>
+        </div>
+        <button onclick="abrirAba('novo_atendimento')" class="btn-primary">+ Novo</button>
+    </div>
+    <div class="timeline-container mt-20" id="lista-agenda">
+    </div>
+</div>

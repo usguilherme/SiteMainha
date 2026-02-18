@@ -1,0 +1,87 @@
+<div class="pdv-layout">
+    <div class="pdv-left glass-panel">
+        <div class="step-box">
+            <span class="step-num">1</span>
+            <h3>Quem é a cliente?</h3>
+            <div class="form-group">
+                <select id="pdv-cliente" class="modern-input"></select>
+                <button onclick="abrirModalCliente()" class="btn-icon" title="Cadastrar Nova"><i data-lucide="user-plus"></i></button>
+            </div>
+        </div>
+
+        <div class="step-box">
+            <span class="step-num">2</span>
+            <h3>O que ela fez / Levou?</h3>
+            <div class="form-group">
+                <select id="pdv-servico" class="modern-input"></select>
+                <button onclick="adicionarAoCarrinho()" class="btn-primary">Adicionar</button>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <h3>Pós-Venda Inteligente</h3>
+        <div class="grid-2">
+            <div>
+                <label class="label-small">Retorno em (dias)</label>
+                <input type="number" id="pdv-dias-retorno" class="modern-input" placeholder="Ex: 30" oninput="calcularDataRetorno()">
+            </div>
+            <div>
+                <label class="label-small">Data Calculada</label>
+                <input type="date" id="pdv-retorno" class="modern-input">
+            </div>
+        </div>
+        <div class="mt-10">
+            <label class="label-small">Observações</label>
+            <input type="text" id="pdv-obs" class="modern-input" placeholder="Ex: Usou Coloração 7.1...">
+        </div>
+    </div>
+
+    <div class="pdv-right glass-panel">
+        <div class="ticket-header">
+            <h3>Resumo</h3>
+            <span class="badge">Aberto</span>
+        </div>
+        <ul id="lista-carrinho" class="carrinho-list">
+            <li class="empty-state">Selecione os serviços...</li>
+        </ul>
+        
+        <div class="checkout-area">
+            <div class="total-display">
+                <span>Total a Pagar</span>
+                <h2 id="pdv-total">R$ 0,00</h2>
+            </div>
+            
+            <label class="label-small">Forma de Pagamento</label>
+            <select id="pdv-pagamento" class="modern-input mb-10" onchange="toggleTroco()">
+                <option value="Dinheiro">💵 Dinheiro</option>
+                <option value="Pix">💠 Pix</option>
+                <option value="Cartão Crédito">💳 Crédito</option>
+                <option value="Cartão Débito">💳 Débito</option>
+            </select>
+
+            <div id="area-troco" class="troco-box">
+                <div class="flex-between">
+                    <div style="flex:1; margin-right:10px">
+                        <label class="label-small">Recebido</label>
+                        <input type="number" id="pdv-valor-pago" class="modern-input compact" placeholder="0,00" oninput="calcularTroco()">
+                    </div>
+                    <div style="flex:1; text-align:right">
+                        <label class="label-small">Troco</label>
+                        <h3 id="pdv-troco-display" class="text-success">R$ 0,00</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div id="area-pix" class="pix-box" style="display:none; text-align:center; margin-bottom:10px;">
+                <div id="qrcode-container" style="background:white; padding:10px; border-radius:8px; display:inline-block; margin-bottom:5px;">
+                    <canvas id="qr-pix"></canvas>
+                </div>
+                <input type="text" id="pix-copia-cola" class="modern-input" readonly onclick="this.select()" style="font-size:10px;">
+                <button onclick="copiarPix()" class="btn-small bg-green full-width mt-10">Copiar Código Pix</button>
+            </div>
+
+            <button onclick="finalizarVenda()" class="btn-checkout">FINALIZAR</button>
+        </div>
+    </div>
+</div>

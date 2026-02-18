@@ -1,7 +1,6 @@
 // ==========================================
 // 1. CONFIGURAÇÃO GERAL
 // ==========================================
-// Variáveis de configuração que serão carregadas do Firebase
 let configSistema = {
     chavePix: "",
     nomePix: "",
@@ -35,6 +34,7 @@ let store = {
     carrinho: []
 };
 
+// Variáveis de Controle
 let chartTop = null;
 let chartSemana = null;
 let idDespesaEdicao = null;
@@ -44,8 +44,81 @@ let idProdutoEdicao = null;
 let idClienteEdicao = null; 
 let clienteAnamneseAtual = null;
 
+// Controle de Carregamento (HTML Modular)
+let htmlCarregado = false;
+let usuarioLogado = null;
+let sistemaIniciado = false; // Evita rodar inicializarSistema 2x
+
 // ==========================================
-// 2. LÓGICA DE SELEÇÃO DE DISPOSITIVO
+// 2. CONTROLE DE INICIALIZAÇÃO (NOVO)
+// ==========================================
+
+// Escuta o evento que vem do index.html quando os arquivos .html terminam de carregar
+document.addEventListener('sistemaPronto', () => {
+    console.log("DOM Modular carregado.");
+    htmlCarregado = true;
+    
+    // Inicia efeitos visuais
+    lucide.createIcons();
+    initRippleEffect();
+    
+    // Configura data do header
+    const options = { weekday: 'long', day: 'numeric', month: 'long' };
+    const dateEl = document.getElementById("data-hoje");
+    if(dateEl) dateEl.innerText = new Date().toLocaleDateString('pt-BR', options);
+
+    tentarIniciarSistema();
+});
+
+// Listener de Autenticação do Firebase
+auth.onAuthStateChanged((user) => {
+    const loader = document.getElementById("loader-overlay");
+    
+    if (user) {
+        console.log("Logado como:", user.email);
+        usuarioLogado = user;
+
+        if(document.getElementById("user-email-display")) {
+            document.getElementById("user-email-display").innerText = user.email;
+        }
+
+        // Esconde loader
+        if(loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => loader.style.display = 'none', 500);
+        }
+
+        // Verifica se precisa fechar login
+        const deviceOverlay = document.getElementById('device-selection');
+        if (deviceOverlay && deviceOverlay.style.display === 'none') {
+            document.getElementById("login-overlay").style.display = 'none';
+        }
+
+        tentarIniciarSistema();
+
+    } else {
+        usuarioLogado = null;
+        sistemaIniciado = false; // Reseta flag se deslogar
+        
+        if(loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => loader.style.display = 'none', 500);
+        }
+    }
+});
+
+// Função segura que só roda quando TUDO está pronto
+function tentarIniciarSistema() {
+    if (htmlCarregado && usuarioLogado && !sistemaIniciado) {
+        console.log("Iniciando lógica do sistema...");
+        sistemaIniciado = true;
+        initAgenda(); // Configura o input date da agenda
+        inicializarSistema(); // Conecta com o Firebase
+    }
+}
+
+// ==========================================
+// 3. LÓGICA DE SELEÇÃO DE DISPOSITIVO
 // ==========================================
 function escolherDispositivo(tipo) {
     const overlay = document.getElementById('device-selection');
@@ -63,43 +136,8 @@ function escolherDispositivo(tipo) {
 }
 
 // ==========================================
-// 3. INICIALIZAÇÃO E AUTH
+// 4. FUNÇÕES DO SISTEMA
 // ==========================================
-document.addEventListener("DOMContentLoaded", () => {
-    lucide.createIcons();
-    initRippleEffect();
-    const loader = document.getElementById("loader-overlay");
-    
-    auth.onAuthStateChanged((user) => {
-        if (user) {
-            console.log("Logado como:", user.email);
-            if(document.getElementById("user-email-display")) {
-                document.getElementById("user-email-display").innerText = user.email;
-            }
-            if(loader) {
-                loader.style.opacity = '0';
-                setTimeout(() => loader.style.display = 'none', 500);
-            }
-            const deviceOverlay = document.getElementById('device-selection');
-            if (deviceOverlay.style.display === 'none') {
-                document.getElementById("login-overlay").style.display = 'none';
-            }
-            inicializarSistema();
-        } else {
-            if(loader) {
-                loader.style.opacity = '0';
-                setTimeout(() => loader.style.display = 'none', 500);
-            }
-        }
-    });
-
-    const options = { weekday: 'long', day: 'numeric', month: 'long' };
-    const dateEl = document.getElementById("data-hoje");
-    if(dateEl) dateEl.innerText = new Date().toLocaleDateString('pt-BR', options);
-    
-    // Inicializa a data da agenda como hoje
-    initAgenda();
-});
 
 function verificarSenha() {
     const email = document.getElementById("input-email").value.trim();
@@ -135,14 +173,11 @@ function logout() {
 
 function resetarSistema() {
     const user = auth.currentUser;
-    
     if (!user) {
         alert("Você precisa estar logado para fazer isso.");
         return;
     }
-
     const senhaLogin = prompt("⚠️ PERIGO: Esta ação apagará TODOS os dados.\n\nPara confirmar, digite sua SENHA DE LOGIN:");
-    
     if (!senhaLogin) return; 
 
     const credencial = firebase.auth.EmailAuthProvider.credential(user.email, senhaLogin);
@@ -243,7 +278,7 @@ function initRippleEffect() {
 }
 
 function inicializarSistema() {
-    console.log("Sistema Iniciado");
+    console.log("Conectando Listeners do Firebase...");
     
     // CARREGAR CONFIGURAÇÕES
     db.ref('config').on('value', snap => {
@@ -290,7 +325,7 @@ function inicializarSistema() {
 }
 
 // ==========================================
-// 4. CONFIGURAÇÕES & MODAL
+// 5. CONFIGURAÇÕES & MODAL
 // ==========================================
 function abrirModalConfig() {
     document.getElementById("cfg-chave-pix").value = configSistema.chavePix || "";
@@ -320,7 +355,7 @@ function salvarConfiguracoes() {
 }
 
 // ==========================================
-// 5. NAVEGAÇÃO E UI
+// 6. NAVEGAÇÃO E UI
 // ==========================================
 function abrirAba(idAba) {
     const abasAtivas = document.querySelectorAll('.aba');
@@ -377,7 +412,7 @@ function dispararToast(msg, tipo = 'success') {
 }
 
 // ==========================================
-// 6. MÓDULO: PDV & PIX
+// 7. MÓDULO: PDV & PIX
 // ==========================================
 function renderServicosPDV() {
     const sel = document.getElementById("pdv-servico");
@@ -613,7 +648,7 @@ function finalizarVenda() {
 }
 
 // ==========================================
-// 7. AGENDA
+// 8. AGENDA
 // ==========================================
 function initAgenda() {
     const hoje = new Date().toISOString().split('T')[0];
@@ -628,13 +663,14 @@ function renderAgenda() {
     const div = document.getElementById("lista-agenda");
     const inputDate = document.getElementById("agenda-date-input");
     
-    if(!inputDate) return;
+    if(!inputDate || !div) return; // Segurança extra
 
     const dataSelecionada = inputDate.value;
     
     const dataObj = new Date(dataSelecionada + 'T00:00:00');
     const options = { weekday: 'long', day: 'numeric', month: 'long' };
-    document.getElementById("agenda-dia-semana").innerText = dataObj.toLocaleDateString('pt-BR', options);
+    const diaEl = document.getElementById("agenda-dia-semana");
+    if(diaEl) diaEl.innerText = dataObj.toLocaleDateString('pt-BR', options);
 
     const agendaDoDia = store.atendimentos
         .filter(a => a.data === dataSelecionada)
@@ -677,7 +713,7 @@ function editarAtendimento(id) {
 }
 
 // ==========================================
-// 8. CLIENTES, GALERIA & EDIÇÃO
+// 9. CLIENTES, GALERIA & EDIÇÃO
 // ==========================================
 function renderTabelaClientes() {
     const tbody = document.getElementById("tabela-clientes");
@@ -931,7 +967,7 @@ function salvarFotoGaleria() {
 }
 
 // ==========================================
-// 9. ESTOQUE (NOVO)
+// 10. ESTOQUE (NOVO)
 // ==========================================
 function salvarProdutoEstoque() {
     const nome = document.getElementById("prod-nome").value;
@@ -1001,7 +1037,7 @@ function cancelarEdicaoProduto() {
 
 
 // ==========================================
-// 10. DESPESAS E FINANCEIRO
+// 11. DESPESAS E FINANCEIRO
 // ==========================================
 function lancarDespesa() {
     const desc = document.getElementById("desp-desc").value;
@@ -1256,7 +1292,7 @@ function formatarData(dataISO) {
 }
 
 // ==========================================
-// 11. MÁSCARAS DE INPUT (UX)
+// 12. MÁSCARAS DE INPUT (UX)
 // ==========================================
 document.addEventListener('input', function (e) {
     const target = e.target;

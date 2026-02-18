@@ -1,0 +1,65 @@
+<div class="glass-panel mb-15" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 25px;">
+    <h3 class="text-gradient" style="margin:0;">Desempenho da Unidade</h3>
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="label-small">Período dos Gráficos:</span>
+        <input type="date" id="dash-grafico-inicio" class="modern-input compact" style="width: auto;" onchange="atualizarGraficos()">
+        <span class="text-muted">até</span>
+        <input type="date" id="dash-grafico-fim" class="modern-input compact" style="width: auto;" onchange="atualizarGraficos()">
+        <button onclick="setPeriodoGrafico('hoje')" class="btn-small bg-purple">Hoje</button>
+        <button onclick="setPeriodoGrafico('7dias')" class="btn-small bg-glass">7 Dias</button>
+    </div>
+</div>
+
+<div class="kpi-grid">
+    <div class="kpi-card glass-panel gradient-1">
+        <div class="icon-box"><i data-lucide="dollar-sign"></i></div>
+        <div>
+            <span>Faturamento (Hoje)</span>
+            <h3 id="dash-faturamento">R$ 0,00</h3>
+        </div>
+    </div>
+    <div class="kpi-card glass-panel">
+        <div class="icon-box"><i data-lucide="calendar-check"></i></div>
+        <div>
+            <span>Agendamentos</span>
+            <h3 id="dash-atendimentos">0</h3>
+        </div>
+    </div>
+    <div class="kpi-card glass-panel">
+        <div class="icon-box warning"><i data-lucide="hourglass"></i></div>
+        <div>
+            <span>Retornos Pendentes</span>
+            <h3 id="dash-retornos">0</h3>
+        </div>
+    </div>
+    <div class="kpi-card glass-panel">
+        <div class="icon-box info"><i data-lucide="award"></i></div>
+        <div>
+            <span>Pontos Distribúidos</span>
+            <h3 id="dash-pontos">0</h3>
+        </div>
+    </div>
+</div>
+
+<div class="charts-grid">
+    <div class="chart-box glass-panel">
+        <h4>🔥 Serviços Mais Realizados</h4>
+        <div class="canvas-wrapper"><canvas id="chartTopServicos"></canvas></div>
+    </div>
+    <div class="chart-box glass-panel">
+        <h4>📈 Faturamento no Período</h4>
+        <div class="canvas-wrapper"><canvas id="chartSemanal"></canvas></div>
+    </div>
+</div>
+
+<div class="glass-panel mt-15">
+    <div class="table-header">
+        <h3><i data-lucide="history" style="width:16px"></i> Clientes para Retornar</h3>
+        <div class="filter-controls">
+            <span class="label-small">Filtrar Lista:</span>
+            <input type="date" id="dash-filtro-data" class="modern-input compact" onchange="filtrarRetornosDashboard()">
+            <button onclick="limparFiltroRetorno()" class="btn-small bg-glass">Todos</button>
+        </div>
+    </div>
+    <div id="lista-retornos-dashboard" class="simple-list mt-10"></div>
+</div>

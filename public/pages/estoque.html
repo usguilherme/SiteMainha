@@ -1,0 +1,31 @@
+<div class="glass-panel form-inline mb-15">
+    <input type="hidden" id="id-produto-edicao">
+    <div class="grid-2" style="grid-template-columns: 2fr 1fr 1fr auto; width: 100%;">
+        <input type="text" id="prod-nome" placeholder="Nome do Produto (Ex: Shampoo)" class="modern-input">
+        <input type="number" id="prod-qtd" placeholder="Qtd" class="modern-input">
+        <input type="number" id="prod-preco" placeholder="Valor Venda (R$)" class="modern-input">
+        
+        <div class="action-buttons">
+            <button onclick="salvarProdutoEstoque()" id="btn-salvar-produto" class="btn-primary">Salvar</button>
+            <button onclick="cancelarEdicaoProduto()" id="btn-cancelar-produto" class="btn-danger" style="display:none">✕</button>
+        </div>
+    </div>
+</div>
+
+<div class="glass-panel">
+    <h3><i data-lucide="package" style="width:16px"></i> Itens em Estoque</h3>
+    <div class="table-responsive">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Quantidade</th>
+                    <th>Preço Venda</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-estoque">
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,12 @@
+<div class="glass-panel form-inline">
+    <input type="hidden" id="id-servico-edicao">
+    <input type="text" id="serv-nome" placeholder="Nome do Serviço" class="modern-input">
+    <input type="number" id="serv-preco" placeholder="Valor (R$)" class="modern-input">
+    
+    <div class="action-buttons">
+        <button onclick="salvarServicoCad()" id="btn-salvar-servico" class="btn-primary">Salvar</button>
+        <button onclick="cancelarEdicaoServico()" id="btn-cancelar-servico" class="btn-danger" style="display:none">✕</button>
+    </div>
+</div>
+<div id="lista-servicos-cad" class="grid-cards mt-15"></div>
+<button onclick="abrirAba('financeiro')" class="btn-small mt-15 mobile-only" style="width:100%; opacity:0.7">Voltar ao Menu</button>

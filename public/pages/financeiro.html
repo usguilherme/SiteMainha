@@ -1,0 +1,38 @@
+<div class="glass-panel mb-15" style="border: 1px solid rgba(255,255,255,0.1);">
+    <h4 style="margin-bottom: 10px; color: var(--text-muted);">Acesso Rápido</h4>
+    <div class="grid-2">
+        <button onclick="abrirAba('despesas')" class="btn-danger full-width" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+            <i data-lucide="receipt" style="width:16px"></i> Lançar Despesa
+        </button>
+        <button onclick="abrirAba('servicos')" class="btn-primary full-width" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+            <i data-lucide="scissors" style="width:16px"></i> Editar Serviços
+        </button>
+    </div>
+    <button onclick="fazerBackup()" class="btn-small mt-15 full-width" style="background: #334155;">
+        <i data-lucide="file-spreadsheet"></i> Exportar Dados para Excel
+    </button>
+</div>
+
+<div class="finance-cards">
+    <div class="fin-card income">
+        <span>Entradas (Mês)</span>
+        <h2 id="fin-entradas">R$ 0,00</h2>
+    </div>
+    <div class="fin-card expense">
+        <span>Saídas (Mês)</span>
+        <h2 id="fin-saidas">R$ 0,00</h2>
+    </div>
+    <div class="fin-card profit">
+        <span>Lucro Líquido</span>
+        <h2 id="fin-lucro">R$ 0,00</h2>
+    </div>
+</div>
+<div class="glass-panel mt-15">
+    <h3>Extrato de Lançamentos</h3>
+    <div class="table-responsive">
+        <table class="modern-table">
+            <thead><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th>Valor</th></tr></thead>
+            <tbody id="tabela-financeiro"></tbody>
+        </table>
+    </div>
+</div>

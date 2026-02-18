@@ -14,7 +14,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script> 
     
     <link rel="stylesheet" href="css/style.css">
-    
     <link rel="manifest" href="manifest.json">
 </head>
 <body>
@@ -143,329 +142,14 @@
 
             <div class="content-scroll">
                 
-                <section id="dashboard" class="aba ativa fade-in">
-                    <div class="glass-panel mb-15" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 25px;">
-                        <h3 class="text-gradient" style="margin:0;">Desempenho da Unidade</h3>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <span class="label-small">Período dos Gráficos:</span>
-                            <input type="date" id="dash-grafico-inicio" class="modern-input compact" style="width: auto;" onchange="atualizarGraficos()">
-                            <span class="text-muted">até</span>
-                            <input type="date" id="dash-grafico-fim" class="modern-input compact" style="width: auto;" onchange="atualizarGraficos()">
-                            <button onclick="setPeriodoGrafico('hoje')" class="btn-small bg-purple">Hoje</button>
-                            <button onclick="setPeriodoGrafico('7dias')" class="btn-small bg-glass">7 Dias</button>
-                        </div>
-                    </div>
-
-                    <div class="kpi-grid">
-                        <div class="kpi-card glass-panel gradient-1">
-                            <div class="icon-box"><i data-lucide="dollar-sign"></i></div>
-                            <div>
-                                <span>Faturamento (Hoje)</span>
-                                <h3 id="dash-faturamento">R$ 0,00</h3>
-                            </div>
-                        </div>
-                        <div class="kpi-card glass-panel">
-                            <div class="icon-box"><i data-lucide="calendar-check"></i></div>
-                            <div>
-                                <span>Agendamentos</span>
-                                <h3 id="dash-atendimentos">0</h3>
-                            </div>
-                        </div>
-                        <div class="kpi-card glass-panel">
-                            <div class="icon-box warning"><i data-lucide="hourglass"></i></div>
-                            <div>
-                                <span>Retornos Pendentes</span>
-                                <h3 id="dash-retornos">0</h3>
-                            </div>
-                        </div>
-                        <div class="kpi-card glass-panel">
-                            <div class="icon-box info"><i data-lucide="award"></i></div>
-                            <div>
-                                <span>Pontos Distribúidos</span>
-                                <h3 id="dash-pontos">0</h3>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="charts-grid">
-                        <div class="chart-box glass-panel">
-                            <h4>🔥 Serviços Mais Realizados</h4>
-                            <div class="canvas-wrapper"><canvas id="chartTopServicos"></canvas></div>
-                        </div>
-                        <div class="chart-box glass-panel">
-                            <h4>📈 Faturamento no Período</h4>
-                            <div class="canvas-wrapper"><canvas id="chartSemanal"></canvas></div>
-                        </div>
-                    </div>
-
-                    <div class="glass-panel mt-15">
-                        <div class="table-header">
-                            <h3><i data-lucide="history" style="width:16px"></i> Clientes para Retornar</h3>
-                            <div class="filter-controls">
-                                <span class="label-small">Filtrar Lista:</span>
-                                <input type="date" id="dash-filtro-data" class="modern-input compact" onchange="filtrarRetornosDashboard()">
-                                <button onclick="limparFiltroRetorno()" class="btn-small bg-glass">Todos</button>
-                            </div>
-                        </div>
-                        <div id="lista-retornos-dashboard" class="simple-list mt-10"></div>
-                    </div>
-                </section>
-
-                <section id="agenda" class="aba fade-in" style="display:none">
-                    <div class="glass-panel" style="min-height: 100%;">
-                        <div class="agenda-header-flex">
-                            <div>
-                                <h3 class="text-gradient">Agenda</h3>
-                                <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
-                                    <input type="date" id="agenda-date-input" class="modern-input" style="width: 150px;" onchange="renderAgenda()">
-                                    <span id="agenda-dia-semana" class="text-muted" style="font-size: 12px;"></span>
-                                </div>
-                            </div>
-                            <button onclick="abrirAba('novo_atendimento')" class="btn-primary">+ Novo</button>
-                        </div>
-                        <div class="timeline-container mt-20" id="lista-agenda">
-                            </div>
-                    </div>
-                </section>
-
-                <section id="novo_atendimento" class="aba fade-in" style="display:none">
-                    <div class="pdv-layout">
-                        <div class="pdv-left glass-panel">
-                            <div class="step-box">
-                                <span class="step-num">1</span>
-                                <h3>Quem é a cliente?</h3>
-                                <div class="form-group">
-                                    <select id="pdv-cliente" class="modern-input"></select>
-                                    <button onclick="abrirModalCliente()" class="btn-icon" title="Cadastrar Nova"><i data-lucide="user-plus"></i></button>
-                                </div>
-                            </div>
-
-                            <div class="step-box">
-                                <span class="step-num">2</span>
-                                <h3>O que ela fez / Levou?</h3>
-                                <div class="form-group">
-                                    <select id="pdv-servico" class="modern-input"></select>
-                                    <button onclick="adicionarAoCarrinho()" class="btn-primary">Adicionar</button>
-                                </div>
-                            </div>
-
-                            <div class="divider"></div>
-
-                            <h3>Pós-Venda Inteligente</h3>
-                            <div class="grid-2">
-                                <div>
-                                    <label class="label-small">Retorno em (dias)</label>
-                                    <input type="number" id="pdv-dias-retorno" class="modern-input" placeholder="Ex: 30" oninput="calcularDataRetorno()">
-                                </div>
-                                <div>
-                                    <label class="label-small">Data Calculada</label>
-                                    <input type="date" id="pdv-retorno" class="modern-input">
-                                </div>
-                            </div>
-                            <div class="mt-10">
-                                <label class="label-small">Observações</label>
-                                <input type="text" id="pdv-obs" class="modern-input" placeholder="Ex: Usou Coloração 7.1...">
-                            </div>
-                        </div>
-
-                        <div class="pdv-right glass-panel">
-                            <div class="ticket-header">
-                                <h3>Resumo</h3>
-                                <span class="badge">Aberto</span>
-                            </div>
-                            <ul id="lista-carrinho" class="carrinho-list">
-                                <li class="empty-state">Selecione os serviços...</li>
-                            </ul>
-                            
-                            <div class="checkout-area">
-                                <div class="total-display">
-                                    <span>Total a Pagar</span>
-                                    <h2 id="pdv-total">R$ 0,00</h2>
-                                </div>
-                                
-                                <label class="label-small">Forma de Pagamento</label>
-                                <select id="pdv-pagamento" class="modern-input mb-10" onchange="toggleTroco()">
-                                    <option value="Dinheiro">💵 Dinheiro</option>
-                                    <option value="Pix">💠 Pix</option>
-                                    <option value="Cartão Crédito">💳 Crédito</option>
-                                    <option value="Cartão Débito">💳 Débito</option>
-                                </select>
-
-                                <div id="area-troco" class="troco-box">
-                                    <div class="flex-between">
-                                        <div style="flex:1; margin-right:10px">
-                                            <label class="label-small">Recebido</label>
-                                            <input type="number" id="pdv-valor-pago" class="modern-input compact" placeholder="0,00" oninput="calcularTroco()">
-                                        </div>
-                                        <div style="flex:1; text-align:right">
-                                            <label class="label-small">Troco</label>
-                                            <h3 id="pdv-troco-display" class="text-success">R$ 0,00</h3>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div id="area-pix" class="pix-box" style="display:none; text-align:center; margin-bottom:10px;">
-                                    <div id="qrcode-container" style="background:white; padding:10px; border-radius:8px; display:inline-block; margin-bottom:5px;">
-                                        <canvas id="qr-pix"></canvas>
-                                    </div>
-                                    <input type="text" id="pix-copia-cola" class="modern-input" readonly onclick="this.select()" style="font-size:10px;">
-                                    <button onclick="copiarPix()" class="btn-small bg-green full-width mt-10">Copiar Código Pix</button>
-                                </div>
-
-                                <button onclick="finalizarVenda()" class="btn-checkout">FINALIZAR</button>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="clientes" class="aba fade-in" style="display:none">
-                    <div class="glass-panel">
-                        <div class="table-header">
-                            <div class="search-box">
-                                <i data-lucide="search"></i>
-                                <input type="text" id="busca-cliente" placeholder="Buscar por nome..." onkeyup="filtrarClientes()" class="search-input">
-                            </div>
-                            <button onclick="abrirModalCliente()" class="btn-primary">+ Novo</button>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="modern-table">
-                                <thead>
-                                    <tr>
-                                        <th>Cliente</th>
-                                        <th>Fidelidade</th>
-                                        <th>Última Visita</th>
-                                        <th>Próximo Retorno</th>
-                                        <th>Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tabela-clientes"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="estoque" class="aba fade-in" style="display:none">
-                    <div class="glass-panel form-inline mb-15">
-                        <input type="hidden" id="id-produto-edicao">
-                        <div class="grid-2" style="grid-template-columns: 2fr 1fr 1fr auto; width: 100%;">
-                            <input type="text" id="prod-nome" placeholder="Nome do Produto (Ex: Shampoo)" class="modern-input">
-                            <input type="number" id="prod-qtd" placeholder="Qtd" class="modern-input">
-                            <input type="number" id="prod-preco" placeholder="Valor Venda (R$)" class="modern-input">
-                            
-                            <div class="action-buttons">
-                                <button onclick="salvarProdutoEstoque()" id="btn-salvar-produto" class="btn-primary">Salvar</button>
-                                <button onclick="cancelarEdicaoProduto()" id="btn-cancelar-produto" class="btn-danger" style="display:none">✕</button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="glass-panel">
-                        <h3><i data-lucide="package" style="width:16px"></i> Itens em Estoque</h3>
-                        <div class="table-responsive">
-                            <table class="modern-table">
-                                <thead>
-                                    <tr>
-                                        <th>Produto</th>
-                                        <th>Quantidade</th>
-                                        <th>Preço Venda</th>
-                                        <th>Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tabela-estoque">
-                                    </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="financeiro" class="aba fade-in" style="display:none">
-                    <div class="glass-panel mb-15" style="border: 1px solid rgba(255,255,255,0.1);">
-                        <h4 style="margin-bottom: 10px; color: var(--text-muted);">Acesso Rápido</h4>
-                        <div class="grid-2">
-                            <button onclick="abrirAba('despesas')" class="btn-danger full-width" style="display:flex; align-items:center; justify-content:center; gap:8px;">
-                                <i data-lucide="receipt" style="width:16px"></i> Lançar Despesa
-                            </button>
-                            <button onclick="abrirAba('servicos')" class="btn-primary full-width" style="display:flex; align-items:center; justify-content:center; gap:8px;">
-                                <i data-lucide="scissors" style="width:16px"></i> Editar Serviços
-                            </button>
-                        </div>
-                        <button onclick="fazerBackup()" class="btn-small mt-15 full-width" style="background: #334155;">
-                            <i data-lucide="file-spreadsheet"></i> Exportar Dados para Excel
-                        </button>
-                    </div>
-
-                    <div class="finance-cards">
-                        <div class="fin-card income">
-                            <span>Entradas (Mês)</span>
-                            <h2 id="fin-entradas">R$ 0,00</h2>
-                        </div>
-                        <div class="fin-card expense">
-                            <span>Saídas (Mês)</span>
-                            <h2 id="fin-saidas">R$ 0,00</h2>
-                        </div>
-                        <div class="fin-card profit">
-                            <span>Lucro Líquido</span>
-                            <h2 id="fin-lucro">R$ 0,00</h2>
-                        </div>
-                    </div>
-                    <div class="glass-panel mt-15">
-                        <h3>Extrato de Lançamentos</h3>
-                        <div class="table-responsive">
-                            <table class="modern-table">
-                                <thead><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th>Valor</th></tr></thead>
-                                <tbody id="tabela-financeiro"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="servicos" class="aba fade-in" style="display:none">
-                    <div class="glass-panel form-inline">
-                        <input type="hidden" id="id-servico-edicao">
-                        <input type="text" id="serv-nome" placeholder="Nome do Serviço" class="modern-input">
-                        <input type="number" id="serv-preco" placeholder="Valor (R$)" class="modern-input">
-                        
-                        <div class="action-buttons">
-                            <button onclick="salvarServicoCad()" id="btn-salvar-servico" class="btn-primary">Salvar</button>
-                            <button onclick="cancelarEdicaoServico()" id="btn-cancelar-servico" class="btn-danger" style="display:none">✕</button>
-                        </div>
-                    </div>
-                    <div id="lista-servicos-cad" class="grid-cards mt-15"></div>
-                    <button onclick="abrirAba('financeiro')" class="btn-small mt-15 mobile-only" style="width:100%; opacity:0.7">Voltar ao Menu</button>
-                </section>
-
-                <section id="despesas" class="aba fade-in" style="display:none">
-                    <div class="glass-panel">
-                        <h3 id="titulo-form-despesa">Registrar Saída</h3>
-                        <input type="hidden" id="id-despesa-edicao"> 
-                        <div class="grid-2">
-                            <input type="text" id="desp-desc" placeholder="Descrição" class="modern-input">
-                            <input type="number" id="desp-valor" placeholder="Valor (R$)" class="modern-input">
-                            <input type="date" id="desp-data" class="modern-input">
-                            <select id="desp-cat" class="modern-input">
-                                <option value="Fixa">Custo Fixo</option>
-                                <option value="Produto">Produtos</option>
-                                <option value="Pessoal">Pessoal</option>
-                            </select>
-                        </div>
-                        
-                        <div class="grid-2 mt-10">
-                            <button onclick="lancarDespesa()" id="btn-salvar-despesa" class="btn-danger full-width">LANÇAR</button>
-                            <button onclick="cancelarEdicaoDespesa()" id="btn-cancelar-despesa" class="btn-small" style="display:none; background:#444">CANCELAR</button>
-                        </div>
-                    </div>
-
-                    <div class="glass-panel mt-15">
-                        <h3>Histórico</h3>
-                        <div class="table-responsive">
-                            <table class="modern-table">
-                                <thead><tr><th>Data</th><th>Descrição</th><th>Valor</th><th>Ação</th></tr></thead>
-                                <tbody id="lista-gestao-despesas"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <button onclick="abrirAba('financeiro')" class="btn-small mt-15 mobile-only" style="width:100%; opacity:0.7">Voltar ao Menu</button>
-                </section>
+                <section id="dashboard" class="aba ativa fade-in"></section>
+                <section id="agenda" class="aba fade-in" style="display:none"></section>
+                <section id="novo_atendimento" class="aba fade-in" style="display:none"></section>
+                <section id="clientes" class="aba fade-in" style="display:none"></section>
+                <section id="estoque" class="aba fade-in" style="display:none"></section>
+                <section id="financeiro" class="aba fade-in" style="display:none"></section>
+                <section id="servicos" class="aba fade-in" style="display:none"></section>
+                <section id="despesas" class="aba fade-in" style="display:none"></section>
 
             </div>
         </main>
@@ -591,6 +275,41 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
+    <script>
+        async function carregarComponentes() {
+            const paginas = [
+                'dashboard', 'agenda', 'novo_atendimento', 'clientes', 
+                'estoque', 'financeiro', 'servicos', 'despesas'
+            ];
+
+            // Promessa para carregar todas as páginas
+            const loads = paginas.map(async (pagina) => {
+                try {
+                    const response = await fetch(`pages/${pagina}.html`);
+                    if (response.ok) {
+                        const html = await response.text();
+                        document.getElementById(pagina).innerHTML = html;
+                    }
+                } catch (erro) {
+                    console.error(`Erro ao carregar ${pagina}:`, erro);
+                }
+            });
+
+            // Aguarda tudo carregar
+            await Promise.all(loads);
+            
+            console.log("Sistema montado com sucesso!");
+            
+            // Inicia os ícones do Lucide
+            lucide.createIcons();
+
+            // Dispara evento para o script.js saber que pode rodar
+            document.dispatchEvent(new Event('sistemaPronto'));
+        }
+
+        document.addEventListener("DOMContentLoaded", carregarComponentes);
+    </script>
+
     <script src="js/script.js"></script>
 </body>
 </html>
