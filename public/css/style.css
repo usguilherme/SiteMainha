@@ -192,27 +192,20 @@ button { font-family: var(--font-main); letter-spacing: 0.02em; }
 }
 .btn-checkout:hover { transform: translateY(-2px); filter: brightness(1.1); }
 
+/* BOTÃO DE PERIGO / CANCELAR / NÃO */
 .btn-danger { 
-    background: rgba(248, 113, 113, 0.1); color: var(--danger); 
-    border: 1px solid rgba(248, 113, 113, 0.2); padding: 12px 20px; border-radius: 12px;
-    font-weight: 600; cursor: pointer; transition: 0.2s;
-}
-.btn-danger:hover { background: rgba(248, 113, 113, 0.2); border-color: var(--danger); }
-
-/* CLASSE ESPECIAL PARA O BOTÃO NÃO - ESTILO DARK */
-.btn-dark-danger {
-    background: #0f1016; /* Fundo escuro igual ao painel */
+    background: rgba(255, 255, 255, 0.03); /* Fundo preto/glass */
     color: var(--danger); /* Texto vermelho */
-    border: 1px solid var(--border); /* Borda padrão */
+    border: 1px solid var(--danger); /* Borda vermelha */
     padding: 12px 20px; 
     border-radius: 12px;
     font-weight: 600; 
     cursor: pointer; 
     transition: 0.2s;
 }
-.btn-dark-danger:hover {
-    background: rgba(255, 255, 255, 0.05); /* Leve brilho ao passar o mouse */
-    border-color: var(--danger); /* Borda fica vermelha no hover */
+.btn-danger:hover { 
+    background: rgba(248, 113, 113, 0.1); 
+    box-shadow: 0 0 10px rgba(248, 113, 113, 0.2);
 }
 
 .btn-icon { 
@@ -361,7 +354,7 @@ button { font-family: var(--font-main); letter-spacing: 0.02em; }
 .total-display h2 { font-size: 32px; font-family: var(--font-display); line-height: 1; color: white; margin: 0; }
 
 /* =========================================
-   8. LOGIN & MODAIS (CORRIGIDO)
+   8. LOGIN & MODAIS
    ========================================= */
 /* O pulo do gato: Position Fixed para cobrir o site */
 .login-overlay, #device-selection { 
@@ -462,18 +455,41 @@ button { font-family: var(--font-main); letter-spacing: 0.02em; }
 }
 
 @media (max-width: 768px) {
+    /* CORREÇÃO DO TRAVAMENTO NO MOBILE */
+    body {
+        overflow-y: auto !important; /* Libera o scroll no corpo */
+        height: auto !important;
+    }
+
     .app-layout { padding: 0; gap: 0; height: auto; display: block; }
     .sidebar { display: none; }
+    
     .top-header { border-radius: 0 0 24px 24px; margin-bottom: 16px; background: rgba(15, 16, 22, 0.95); }
-    .main-content { height: auto; min-height: 100vh; padding-bottom: 90px; overflow: visible; }
-    .content-scroll { overflow: visible; padding: 0 16px; }
     
-    .pdv-layout { grid-template-columns: 1fr; gap: 24px; }
+    .main-content { 
+        height: auto; 
+        min-height: 100vh; 
+        padding-bottom: 90px; 
+        overflow: visible; /* Deixa o conteúdo expandir */
+    }
+    
+    .content-scroll { 
+        overflow: visible; 
+        padding: 0 16px; 
+    }
+    
+    /* Layout Vertical no Mobile */
+    .pdv-layout { grid-template-columns: 1fr; gap: 24px; display: flex; flex-direction: column; }
     .grid-2 { grid-template-columns: 1fr; }
+    .mobile-stack { display: flex; flex-direction: column; gap: 10px; }
+    .mobile-stack-cards { grid-template-columns: 1fr; display: flex; flex-direction: column; gap: 10px; }
+
+    .glass-panel { padding: 16px; }
     
+    /* Menu Inferior Fixo */
     .mobile-bottom-nav {
         display: flex; position: fixed; bottom: 0; width: 100%; height: 70px;
-        background: rgba(10, 10, 15, 0.9); backdrop-filter: blur(20px);
+        background: rgba(10, 10, 15, 0.95); backdrop-filter: blur(20px);
         border-top: 1px solid var(--border); z-index: 9000;
         justify-content: space-around; align-items: center;
         padding-bottom: env(safe-area-inset-bottom);
@@ -488,4 +504,9 @@ button { font-family: var(--font-main); letter-spacing: 0.02em; }
     
     .mobile-logout-icon { display: block; margin-left: auto; color: var(--danger); }
     .search-box, .search-input { width: 100%; }
+    
+    /* Tabela com Scroll Horizontal */
+    .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    
+    .btn-primary, .modern-input, .btn-danger, .btn-checkout { width: 100%; box-sizing: border-box; }
 }

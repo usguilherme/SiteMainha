@@ -654,7 +654,7 @@ function finalizarVenda() {
     const retorno = document.getElementById("pdv-retorno").value;
     const obs = document.getElementById("pdv-obs").value;
     
-    // Captura a data que está no campo do PDV (pode ser a que veio da agenda ou a que o usuário mudou)
+    // Captura a data que está no campo visual
     const dataSelecionada = document.getElementById("pdv-data").value;
 
     const total = store.carrinho.reduce((acc, i) => acc + parseFloat(i.preco), 0);
@@ -670,7 +670,7 @@ function finalizarVenda() {
     const id = idAtendimentoEdicao || Date.now();
     const atendimento = {
         id,
-        // Usa a data do campo visual
+        // Usa a data do campo ou hoje se estiver vazio
         data: dataSelecionada || new Date().toISOString().split('T')[0],
         hora: new Date().toLocaleTimeString('pt-BR').substr(0,5),
         timestamp: Date.now(),
@@ -684,10 +684,11 @@ function finalizarVenda() {
     };
 
     if (idAtendimentoEdicao) {
+        // --- MODO EDIÇÃO ---
         db.ref(`atendimentos/${id}`).update(atendimento);
-        dispararToast("Atendimento atualizado!");
-        idAtendimentoEdicao = null;
+        dispararToast("Atendimento atualizado com sucesso!");
     } else {
+        // --- MODO NOVA VENDA ---
         db.ref(`atendimentos/${id}`).set(atendimento);
         dispararToast("✅ Venda Finalizada!");
         
@@ -697,7 +698,7 @@ function finalizarVenda() {
             });
         }
 
-        // === BAIXA NO ESTOQUE ===
+        // Baixa no Estoque (apenas se for venda nova)
         store.carrinho.forEach(item => {
             if(item.tipo === 'produto') {
                 const produtoNoEstoque = store.estoque.find(p => p.id == item.id);
@@ -716,31 +717,81 @@ function finalizarVenda() {
         db.ref(`clientes/${idCliente}`).update(updates);
     }
 
+    // === LIMPEZA E RESET ===
     store.carrinho = [];
     document.getElementById("pdv-obs").value = "";
     document.getElementById("pdv-retorno").value = "";
     document.getElementById("pdv-cliente").value = "";
+    if(document.getElementById("pdv-dias-retorno")) document.getElementById("pdv-dias-retorno").value = "";
+
+    // Reseta a data para HOJE para a próxima venda
+    const inputData = document.getElementById("pdv-data");
+    if(inputData) inputData.value = new Date().toISOString().split('T')[0];
+
     toggleTroco();
     renderCarrinho();
+
+    // === RESETAR O VISUAL (SAIR DO MODO EDIÇÃO) ===
+    idAtendimentoEdicao = null; // Limpa a variável de controle
+    
+    const btnFinalizar = document.getElementById("btn-finalizar-pdv");
+    const badgeStatus = document.getElementById("badge-status-pdv");
+
+    if(btnFinalizar) {
+        btnFinalizar.innerText = "FINALIZAR";
+        btnFinalizar.style.background = ""; // Volta ao original (gradiente verde)
+        btnFinalizar.style.color = "";
+    }
+    if(badgeStatus) {
+        badgeStatus.innerText = "Aberto";
+        badgeStatus.style.background = ""; 
+        badgeStatus.style.color = "";
+    }
 }
 
 function editarAtendimento(id) {
     const a = store.atendimentos.find(item => item.id === id);
     if (!a) return;
+    
+    // Define o ID global para sabermos que é uma edição
     idAtendimentoEdicao = id;
     
-    // Carrega a data original do atendimento no campo
+    // 1. Carrega a Data Original do Atendimento
     const inputData = document.getElementById("pdv-data");
     if(inputData) inputData.value = a.data;
 
+    // 2. Carrega os outros dados
     document.getElementById("pdv-cliente").value = a.clienteId || "";
     store.carrinho = a.servicos ? [...a.servicos] : [];
     document.getElementById("pdv-pagamento").value = a.pagamento || "Dinheiro";
     document.getElementById("pdv-obs").value = a.obs || "";
     document.getElementById("pdv-retorno").value = a.previsaoRetorno || "";
+    
+    // 3. Renderiza o carrinho
     renderCarrinho();
+    
+    // 4. Abre a aba
     abrirAba('novo_atendimento');
-    dispararToast("Modo de edição ativado para: " + a.nomeCliente);
+    
+    // 5. ATUALIZAÇÃO VISUAL (Para saber que está editando)
+    const btnFinalizar = document.getElementById("btn-finalizar-pdv");
+    const badgeStatus = document.getElementById("badge-status-pdv");
+
+    if(btnFinalizar) {
+        btnFinalizar.innerText = "SALVAR ALTERAÇÕES";
+        btnFinalizar.style.background = "var(--warning)"; // Fica amarelo/laranja
+        btnFinalizar.style.color = "black";
+    }
+    if(badgeStatus) {
+        badgeStatus.innerText = "EDITANDO";
+        badgeStatus.style.background = "var(--warning)";
+        badgeStatus.style.color = "black";
+    }
+
+    // 6. ROLA A TELA PARA O TOPO (Correção do Celular)
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    dispararToast("Modo de edição ativado: " + a.nomeCliente);
 }
 
 // ==========================================

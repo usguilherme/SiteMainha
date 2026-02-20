@@ -47,7 +47,7 @@
     <div class="pdv-right glass-panel" style="margin-bottom: 80px;">
         <div class="ticket-header">
             <h3>Resumo</h3>
-            <span class="badge">Aberto</span>
+            <span class="badge" id="badge-status-pdv">Aberto</span>
         </div>
         <ul id="lista-carrinho" class="carrinho-list" style="max-height: 200px; overflow-y: auto;">
             <li class="empty-state">Selecione os serviços...</li>
@@ -88,7 +88,7 @@
                 <button onclick="copiarPix()" class="btn-small bg-green full-width mt-10">Copiar Código Pix</button>
             </div>
 
-            <button onclick="finalizarVenda()" class="btn-checkout">FINALIZAR</button>
+            <button onclick="finalizarVenda()" id="btn-finalizar-pdv" class="btn-checkout">FINALIZAR</button>
         </div>
     </div>
 </div>
@@ -103,9 +103,9 @@
             <h4 style="margin-bottom:20px;">É o mesmo valor?</h4>
             <div style="display:flex; gap:10px; justify-content:center;">
                 <button class="btn-primary" onclick="confirmarPreco(true)" style="width:100px;">Sim</button>
-                <button class="btn-danger" onclick="mostrarInputPreco()" style="width:100px; background:var(--card-bg); border:1px solid var(--border);">Não</button>
+                <button class="btn-danger" onclick="mostrarInputPreco()" style="width:100px;">Não</button>
             </div>
-            <button onclick="fecharModalPreco()" style="margin-top:15px; background:none; border:none; color:#666; cursor:pointer;">Cancelar</button>
+            <button class="btn-dark-danger" onclick="fecharModalPreco()" style="margin-top:15px; width:100%;">Cancelar</button>
         </div>
 
         <div id="etapa-novo-preco" style="display:none;">
@@ -113,7 +113,7 @@
             <input type="number" id="input-novo-preco" class="modern-input" placeholder="0.00" step="0.01" style="margin-bottom:15px;">
             <div style="display:flex; gap:10px;">
                 <button class="btn-primary" onclick="confirmarPreco(false)" style="flex:1;">Confirmar</button>
-                <button class="btn-danger" onclick="fecharModalPreco()" style="flex:1; background:var(--danger);">Cancelar</button>
+                <button class="btn-danger" onclick="fecharModalPreco()" style="flex:1;">Cancelar</button>
             </div>
         </div>
     </div>
