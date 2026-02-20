@@ -44,6 +44,9 @@ let idProdutoEdicao = null;
 let idClienteEdicao = null; 
 let clienteAnamneseAtual = null;
 
+// Controle de Item Pendente (Novo Preço)
+let itemPendente = null;
+
 // Controle de Carregamento (HTML Modular)
 let htmlCarregado = false;
 let usuarioLogado = null;
@@ -412,7 +415,7 @@ function dispararToast(msg, tipo = 'success') {
 }
 
 // ==========================================
-// 7. MÓDULO: PDV & PIX
+// 7. MÓDULO: PDV & PIX (COM PREÇO VARIÁVEL)
 // ==========================================
 function renderServicosPDV() {
     const sel = document.getElementById("pdv-servico");
@@ -444,6 +447,7 @@ function renderClientesPDV() {
         store.clientes.map(c => `<option value="${c.id}">${c.nome}</option>`).join("");
 }
 
+// ALTERAÇÃO: Ao clicar em adicionar, abrimos a confirmação de preço
 function adicionarAoCarrinho() {
     const sel = document.getElementById("pdv-servico");
     const option = sel.options[sel.selectedIndex];
@@ -451,16 +455,64 @@ function adicionarAoCarrinho() {
     if(!sel.value) return dispararToast("Selecione algo!", "error");
 
     // Captura se é serviço ou produto
-    const item = {
+    itemPendente = {
         id: sel.value,
         nome: option.text.split(' - R$')[0].split(' (Estoque')[0], // Limpa o nome para o carrinho
         preco: option.getAttribute('data-preco'),
         tipo: option.getAttribute('data-tipo') // 'servico' ou 'produto'
     };
 
-    store.carrinho.push(item);
-    renderCarrinho();
+    // Abre o Modal de Confirmação em vez de adicionar direto
+    abrirModalPreco(itemPendente);
 }
+
+// === FUNÇÕES DO MODAL DE PREÇO ===
+function abrirModalPreco(item) {
+    document.getElementById("txt-modal-produto").innerText = item.nome;
+    document.getElementById("txt-modal-preco-original").innerText = `Valor Padrão: R$ ${parseFloat(item.preco).toFixed(2)}`;
+    
+    // Reseta o estado do modal
+    document.getElementById("etapa-pergunta-preco").style.display = 'block';
+    document.getElementById("etapa-novo-preco").style.display = 'none';
+    document.getElementById("input-novo-preco").value = "";
+    
+    document.getElementById("modal-confirmar-preco").style.display = "flex";
+}
+
+function mostrarInputPreco() {
+    document.getElementById("etapa-pergunta-preco").style.display = 'none';
+    document.getElementById("etapa-novo-preco").style.display = 'block';
+    document.getElementById("input-novo-preco").focus();
+}
+
+function fecharModalPreco() {
+    document.getElementById("modal-confirmar-preco").style.display = "none";
+    itemPendente = null;
+}
+
+function confirmarPreco(isOriginal) {
+    if (!itemPendente) return;
+
+    if (isOriginal) {
+        // Usa o preço original já salvo em itemPendente
+        store.carrinho.push(itemPendente);
+        dispararToast("Item adicionado com valor original.");
+    } else {
+        // Pega o novo valor do input
+        const novoValor = parseFloat(document.getElementById("input-novo-preco").value);
+        if (isNaN(novoValor) || novoValor < 0) {
+            alert("Digite um valor válido!");
+            return;
+        }
+        itemPendente.preco = novoValor; // Atualiza SÓ para esta venda
+        store.carrinho.push(itemPendente);
+        dispararToast("Item adicionado com novo valor!");
+    }
+
+    renderCarrinho();
+    fecharModalPreco();
+}
+// ==========================================
 
 function renderCarrinho() {
     const lista = document.getElementById("lista-carrinho");
