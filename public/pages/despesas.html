@@ -1,8 +1,8 @@
 <div class="glass-panel">
     <h3 id="titulo-form-despesa">Registrar Saída</h3>
     <input type="hidden" id="id-despesa-edicao"> 
-    <div class="grid-2">
-        <input type="text" id="desp-desc" placeholder="Descrição" class="modern-input">
+    
+    <div class="grid-2 mobile-stack"> <input type="text" id="desp-desc" placeholder="Descrição" class="modern-input">
         <input type="number" id="desp-valor" placeholder="Valor (R$)" class="modern-input">
         <input type="date" id="desp-data" class="modern-input">
         <select id="desp-cat" class="modern-input">
@@ -12,19 +12,19 @@
         </select>
     </div>
     
-    <div class="grid-2 mt-10">
+    <div class="grid-2 mt-10 mobile-stack">
         <button onclick="lancarDespesa()" id="btn-salvar-despesa" class="btn-danger full-width">LANÇAR</button>
-        <button onclick="cancelarEdicaoDespesa()" id="btn-cancelar-despesa" class="btn-small" style="display:none; background:#444">CANCELAR</button>
+        <button onclick="cancelarEdicaoDespesa()" id="btn-cancelar-despesa" class="btn-small full-width" style="display:none; background:#444; margin-top: 10px;">CANCELAR</button>
     </div>
 </div>
 
-<div class="glass-panel mt-15">
+<div class="glass-panel mt-15" style="margin-bottom: 80px;">
     <h3>Histórico</h3>
-    <div class="table-responsive">
-        <table class="modern-table">
+    <div class="table-responsive" style="overflow-x: auto;">
+        <table class="modern-table" style="min-width: 500px;">
             <thead><tr><th>Data</th><th>Descrição</th><th>Valor</th><th>Ação</th></tr></thead>
             <tbody id="lista-gestao-despesas"></tbody>
         </table>
     </div>
 </div>
-<button onclick="abrirAba('financeiro')" class="btn-small mt-15 mobile-only" style="width:100%; opacity:0.7">Voltar ao Menu</button>
+<button onclick="abrirAba('financeiro')" class="btn-small mt-15 mobile-only" style="width:100%; opacity:0.7; margin-bottom: 30px;">Voltar ao Menu</button>

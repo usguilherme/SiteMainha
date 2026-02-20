@@ -1,21 +1,24 @@
 <div class="glass-panel form-inline mb-15">
     <input type="hidden" id="id-produto-edicao">
-    <div class="grid-2" style="grid-template-columns: 2fr 1fr 1fr auto; width: 100%;">
-        <input type="text" id="prod-nome" placeholder="Nome do Produto (Ex: Shampoo)" class="modern-input">
-        <input type="number" id="prod-qtd" placeholder="Qtd" class="modern-input">
-        <input type="number" id="prod-preco" placeholder="Valor Venda (R$)" class="modern-input">
+    <div class="grid-2 mobile-stack" style="width: 100%;">
+        <input type="text" id="prod-nome" placeholder="Nome do Produto" class="modern-input">
         
-        <div class="action-buttons">
-            <button onclick="salvarProdutoEstoque()" id="btn-salvar-produto" class="btn-primary">Salvar</button>
+        <div style="display: flex; gap: 10px;">
+            <input type="number" id="prod-qtd" placeholder="Qtd" class="modern-input" style="flex: 1;">
+            <input type="number" id="prod-preco" placeholder="R$ Venda" class="modern-input" style="flex: 1;">
+        </div>
+        
+        <div class="action-buttons" style="width: 100%; display: flex; gap: 10px; margin-top: 10px;">
+            <button onclick="salvarProdutoEstoque()" id="btn-salvar-produto" class="btn-primary full-width">Salvar</button>
             <button onclick="cancelarEdicaoProduto()" id="btn-cancelar-produto" class="btn-danger" style="display:none">✕</button>
         </div>
     </div>
 </div>
 
-<div class="glass-panel">
+<div class="glass-panel" style="margin-bottom: 80px;">
     <h3><i data-lucide="package" style="width:16px"></i> Itens em Estoque</h3>
-    <div class="table-responsive">
-        <table class="modern-table">
+    <div class="table-responsive" style="overflow-x: auto;">
+        <table class="modern-table" style="min-width: 500px;">
             <thead>
                 <tr>
                     <th>Produto</th>

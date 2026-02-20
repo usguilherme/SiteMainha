@@ -1,7 +1,7 @@
 <div class="glass-panel mb-15" style="border: 1px solid rgba(255,255,255,0.1);">
     <h4 style="margin-bottom: 10px; color: var(--text-muted);">Acesso Rápido</h4>
-    <div class="grid-2">
-        <button onclick="abrirAba('despesas')" class="btn-danger full-width" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+    <div class="grid-2 mobile-stack">
+        <button onclick="abrirAba('despesas')" class="btn-danger full-width" style="display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom: 10px;">
             <i data-lucide="receipt" style="width:16px"></i> Lançar Despesa
         </button>
         <button onclick="abrirAba('servicos')" class="btn-primary full-width" style="display:flex; align-items:center; justify-content:center; gap:8px;">
@@ -13,7 +13,7 @@
     </button>
 </div>
 
-<div class="finance-cards">
+<div class="finance-cards mobile-stack-cards">
     <div class="fin-card income">
         <span>Entradas (Mês)</span>
         <h2 id="fin-entradas">R$ 0,00</h2>
@@ -27,10 +27,11 @@
         <h2 id="fin-lucro">R$ 0,00</h2>
     </div>
 </div>
-<div class="glass-panel mt-15">
+
+<div class="glass-panel mt-15" style="margin-bottom: 80px;">
     <h3>Extrato de Lançamentos</h3>
-    <div class="table-responsive">
-        <table class="modern-table">
+    <div class="table-responsive" style="overflow-x: auto;">
+        <table class="modern-table" style="min-width: 500px;">
             <thead><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th>Valor</th></tr></thead>
             <tbody id="tabela-financeiro"></tbody>
         </table>

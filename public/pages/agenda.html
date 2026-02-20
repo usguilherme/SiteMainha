@@ -1,14 +1,14 @@
-<div class="glass-panel" style="min-height: 100%;">
-    <div class="agenda-header-flex">
+<div class="glass-panel" style="min-height: 80vh; padding-bottom: 80px;">
+    <div class="agenda-header-flex" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
         <div>
-            <h3 class="text-gradient">Agenda</h3>
+            <h3 class="text-gradient" style="margin: 0;">Agenda</h3>
             <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
-                <input type="date" id="agenda-date-input" class="modern-input" style="width: 150px;" onchange="renderAgenda()">
+                <input type="date" id="agenda-date-input" class="modern-input" style="width: auto;" onchange="renderAgenda()">
                 <span id="agenda-dia-semana" class="text-muted" style="font-size: 12px;"></span>
             </div>
         </div>
         <button onclick="abrirAba('novo_atendimento')" class="btn-primary">+ Novo</button>
     </div>
     <div class="timeline-container mt-20" id="lista-agenda">
-    </div>
+        </div>
 </div>

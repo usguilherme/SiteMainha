@@ -1,12 +1,17 @@
-<div class="glass-panel mb-15" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 25px;">
-    <h3 class="text-gradient" style="margin:0;">Desempenho da Unidade</h3>
-    <div style="display: flex; align-items: center; gap: 10px;">
-        <span class="label-small">Período dos Gráficos:</span>
-        <input type="date" id="dash-grafico-inicio" class="modern-input compact" style="width: auto;" onchange="atualizarGraficos()">
+<div class="glass-panel mb-15" style="display: flex; flex-direction: column; gap: 15px; padding: 15px 25px;">
+    <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
+        <h3 class="text-gradient" style="margin:0;">Desempenho</h3>
+    </div>
+    
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; width: 100%;">
+        <span class="label-small" style="width: 100%;">Período:</span>
+        <input type="date" id="dash-grafico-inicio" class="modern-input compact" style="flex: 1;" onchange="atualizarGraficos()">
         <span class="text-muted">até</span>
-        <input type="date" id="dash-grafico-fim" class="modern-input compact" style="width: auto;" onchange="atualizarGraficos()">
-        <button onclick="setPeriodoGrafico('hoje')" class="btn-small bg-purple">Hoje</button>
-        <button onclick="setPeriodoGrafico('7dias')" class="btn-small bg-glass">7 Dias</button>
+        <input type="date" id="dash-grafico-fim" class="modern-input compact" style="flex: 1;" onchange="atualizarGraficos()">
+    </div>
+    <div style="display: flex; gap: 10px; width: 100%;">
+        <button onclick="setPeriodoGrafico('hoje')" class="btn-small bg-purple" style="flex: 1;">Hoje</button>
+        <button onclick="setPeriodoGrafico('7dias')" class="btn-small bg-glass" style="flex: 1;">7 Dias</button>
     </div>
 </div>
 
@@ -52,12 +57,11 @@
     </div>
 </div>
 
-<div class="glass-panel mt-15">
-    <div class="table-header">
+<div class="glass-panel mt-15" style="margin-bottom: 80px;">
+    <div class="table-header" style="flex-wrap: wrap;">
         <h3><i data-lucide="history" style="width:16px"></i> Clientes para Retornar</h3>
-        <div class="filter-controls">
-            <span class="label-small">Filtrar Lista:</span>
-            <input type="date" id="dash-filtro-data" class="modern-input compact" onchange="filtrarRetornosDashboard()">
+        <div class="filter-controls" style="margin-top: 10px; width: 100%; display: flex; gap: 10px;">
+            <input type="date" id="dash-filtro-data" class="modern-input compact" style="flex: 1;" onchange="filtrarRetornosDashboard()">
             <button onclick="limparFiltroRetorno()" class="btn-small bg-glass">Todos</button>
         </div>
     </div>

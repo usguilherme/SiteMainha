@@ -1,14 +1,14 @@
-<div class="glass-panel">
-    <div class="table-header">
-        <div class="search-box">
+<div class="glass-panel" style="padding-bottom: 80px;">
+    <div class="table-header" style="flex-wrap: wrap; gap: 10px;">
+        <div class="search-box" style="flex: 1; min-width: 200px;">
             <i data-lucide="search"></i>
-            <input type="text" id="busca-cliente" placeholder="Buscar por nome..." onkeyup="filtrarClientes()" class="search-input">
+            <input type="text" id="busca-cliente" placeholder="Buscar por nome..." onkeyup="filtrarClientes()" class="search-input" style="width: 100%;">
         </div>
         <button onclick="abrirModalCliente()" class="btn-primary">+ Novo</button>
     </div>
-    <div class="table-responsive">
-        <table class="modern-table">
-            <thead>
+    
+    <div class="table-responsive" style="overflow-x: auto;">
+        <table class="modern-table" style="min-width: 600px;"> <thead>
                 <tr>
                     <th>Cliente</th>
                     <th>Fidelidade</th>

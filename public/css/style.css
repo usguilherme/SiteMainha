@@ -199,6 +199,22 @@ button { font-family: var(--font-main); letter-spacing: 0.02em; }
 }
 .btn-danger:hover { background: rgba(248, 113, 113, 0.2); border-color: var(--danger); }
 
+/* CLASSE ESPECIAL PARA O BOTÃO NÃO - ESTILO DARK */
+.btn-dark-danger {
+    background: #0f1016; /* Fundo escuro igual ao painel */
+    color: var(--danger); /* Texto vermelho */
+    border: 1px solid var(--border); /* Borda padrão */
+    padding: 12px 20px; 
+    border-radius: 12px;
+    font-weight: 600; 
+    cursor: pointer; 
+    transition: 0.2s;
+}
+.btn-dark-danger:hover {
+    background: rgba(255, 255, 255, 0.05); /* Leve brilho ao passar o mouse */
+    border-color: var(--danger); /* Borda fica vermelha no hover */
+}
+
 .btn-icon { 
     width: 48px; height: 48px; border-radius: 12px; 
     background: rgba(255,255,255,0.05); border: 1px solid var(--border);

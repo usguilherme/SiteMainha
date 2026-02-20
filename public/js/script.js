@@ -110,13 +110,16 @@ auth.onAuthStateChanged((user) => {
     }
 });
 
-// Função segura que só roda quando TUDO está pronto
 function tentarIniciarSistema() {
     if (htmlCarregado && usuarioLogado && !sistemaIniciado) {
         console.log("Iniciando lógica do sistema...");
         sistemaIniciado = true;
         initAgenda(); // Configura o input date da agenda
         inicializarSistema(); // Conecta com o Firebase
+        
+        // Define a data inicial do PDV como hoje
+        const inputPDV = document.getElementById("pdv-data");
+        if(inputPDV) inputPDV.value = new Date().toISOString().split('T')[0];
     }
 }
 
@@ -387,6 +390,23 @@ function abrirAba(idAba) {
         }
         lucide.createIcons();
     }, 200);
+
+    // LÓGICA DE SINCRONIZAÇÃO DE DATA (AGENDA -> PDV)
+    if (idAba === 'novo_atendimento') {
+        const dataAgenda = document.getElementById("agenda-date-input");
+        const dataPDV = document.getElementById("pdv-data");
+        
+        // Se estivermos editando um atendimento, não mexe na data, usa a original
+        if (idAtendimentoEdicao) return;
+
+        // Se veio da Agenda e tem data selecionada, aplica no PDV
+        if (dataAgenda && dataAgenda.value && dataPDV) {
+            dataPDV.value = dataAgenda.value;
+        } else if (dataPDV && !dataPDV.value) {
+            // Se não, usa hoje como fallback
+            dataPDV.value = new Date().toISOString().split('T')[0];
+        }
+    }
 }
 
 function dispararToast(msg, tipo = 'success') {
@@ -633,6 +653,10 @@ function finalizarVenda() {
     const pagamento = document.getElementById("pdv-pagamento").value;
     const retorno = document.getElementById("pdv-retorno").value;
     const obs = document.getElementById("pdv-obs").value;
+    
+    // Captura a data que está no campo do PDV (pode ser a que veio da agenda ou a que o usuário mudou)
+    const dataSelecionada = document.getElementById("pdv-data").value;
+
     const total = store.carrinho.reduce((acc, i) => acc + parseFloat(i.preco), 0);
 
     let nomeCliente = "Cliente Avulso";
@@ -646,7 +670,8 @@ function finalizarVenda() {
     const id = idAtendimentoEdicao || Date.now();
     const atendimento = {
         id,
-        data: new Date().toISOString().split('T')[0],
+        // Usa a data do campo visual
+        data: dataSelecionada || new Date().toISOString().split('T')[0],
         hora: new Date().toLocaleTimeString('pt-BR').substr(0,5),
         timestamp: Date.now(),
         clienteId: idCliente || null,
@@ -697,6 +722,25 @@ function finalizarVenda() {
     document.getElementById("pdv-cliente").value = "";
     toggleTroco();
     renderCarrinho();
+}
+
+function editarAtendimento(id) {
+    const a = store.atendimentos.find(item => item.id === id);
+    if (!a) return;
+    idAtendimentoEdicao = id;
+    
+    // Carrega a data original do atendimento no campo
+    const inputData = document.getElementById("pdv-data");
+    if(inputData) inputData.value = a.data;
+
+    document.getElementById("pdv-cliente").value = a.clienteId || "";
+    store.carrinho = a.servicos ? [...a.servicos] : [];
+    document.getElementById("pdv-pagamento").value = a.pagamento || "Dinheiro";
+    document.getElementById("pdv-obs").value = a.obs || "";
+    document.getElementById("pdv-retorno").value = a.previsaoRetorno || "";
+    renderCarrinho();
+    abrirAba('novo_atendimento');
+    dispararToast("Modo de edição ativado para: " + a.nomeCliente);
 }
 
 // ==========================================

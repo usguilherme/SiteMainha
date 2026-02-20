@@ -1,5 +1,12 @@
-<div class="pdv-layout">
+<div class="pdv-layout mobile-stack">
     <div class="pdv-left glass-panel">
+        <div class="step-box">
+            <h3 style="margin-bottom: 10px;">📅 Data do Atendimento</h3>
+            <div class="form-group">
+                <input type="date" id="pdv-data" class="modern-input" style="font-weight: bold; color: var(--primary);">
+            </div>
+        </div>
+
         <div class="step-box">
             <span class="step-num">1</span>
             <h3>Quem é a cliente?</h3>
@@ -21,7 +28,7 @@
         <div class="divider"></div>
 
         <h3>Pós-Venda Inteligente</h3>
-        <div class="grid-2">
+        <div class="grid-2 mobile-stack">
             <div>
                 <label class="label-small">Retorno em (dias)</label>
                 <input type="number" id="pdv-dias-retorno" class="modern-input" placeholder="Ex: 30" oninput="calcularDataRetorno()">
@@ -37,12 +44,12 @@
         </div>
     </div>
 
-    <div class="pdv-right glass-panel">
+    <div class="pdv-right glass-panel" style="margin-bottom: 80px;">
         <div class="ticket-header">
             <h3>Resumo</h3>
             <span class="badge">Aberto</span>
         </div>
-        <ul id="lista-carrinho" class="carrinho-list">
+        <ul id="lista-carrinho" class="carrinho-list" style="max-height: 200px; overflow-y: auto;">
             <li class="empty-state">Selecione os serviços...</li>
         </ul>
         
