@@ -620,26 +620,79 @@ function calcularTroco() {
     }
 }
 
-// === LÓGICA DE GERAÇÃO PIX ESTÁTICO ===
+// ==========================================
+// FUNÇÕES AVANÇADAS DE PIX (CRC16 REAL)
+// ==========================================
+
+// 1. Função auxiliar para formatar os campos do Pix (ID + Tamanho + Valor)
+function formatField(id, value) {
+    const valStr = value.toString();
+    const len = valStr.length.toString().padStart(2, '0');
+    return `${id}${len}${valStr}`;
+}
+
+// 2. Remove acentos e caracteres especiais (O Banco Central exige isso)
+function removeAcentos(str) {
+    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9 ]/g, "");
+}
+
+// 3. Cálculo Matemático do CRC16 (Obrigatório para o banco aceitar)
+function crc16(buffer) {
+    let crc = 0xFFFF;
+    for (let i = 0; i < buffer.length; i++) {
+        let x = ((crc >> 8) ^ buffer.charCodeAt(i)) & 0xFF;
+        x ^= x >> 4;
+        crc = ((crc << 8) ^ (x << 12) ^ (x << 5) ^ x) & 0xFFFF;
+    }
+    return crc.toString(16).toUpperCase().padStart(4, '0');
+}
+
+// 4. Função Principal Atualizada
 function gerarPix(valor) {
     if(!configSistema.chavePix || !configSistema.nomePix) {
         document.getElementById("pix-copia-cola").value = "Configure a Chave Pix nas Configurações!";
         return;
     }
 
-    const chave = configSistema.chavePix;
-    const nome = configSistema.nomePix;
-    const cidade = configSistema.cidadePix || "Brasil";
+    // Limpa os dados para evitar erros de acentuação
+    const chave = configSistema.chavePix.trim();
+    const nome = removeAcentos(configSistema.nomePix.trim()).substring(0, 25); // Limita tamanho
+    const cidade = removeAcentos(configSistema.cidadePix || "Cidade").trim().substring(0, 15);
+    const valorFormatado = valor.toFixed(2);
 
-    const payload = `00020126330014BR.GOV.BCB.PIX0114${chave}520400005303986540${valor.toFixed(2).length + 2}${valor.toFixed(2)}5802BR59${nome.length < 10 ? '0' + nome.length : nome.length}${nome}60${cidade.length < 10 ? '0' + cidade.length : cidade.length}${cidade}62070503***6304`;
+    // Monta a estrutura oficial do Pix (EMV QRCPS)
+    let payload = 
+        formatField("00", "01") +                          // Payload Format Indicator
+        formatField("26",                                  // Merchant Account Information
+            formatField("00", "BR.GOV.BCB.PIX") +
+            formatField("01", chave)
+        ) +
+        formatField("52", "0000") +                        // Merchant Category Code
+        formatField("53", "986") +                         // Transaction Currency (BRL)
+        formatField("54", valorFormatado) +                // Transaction Amount
+        formatField("58", "BR") +                          // Country Code
+        formatField("59", nome) +                          // Merchant Name
+        formatField("60", cidade) +                        // Merchant City
+        formatField("62",                                  // Additional Data Field
+            formatField("05", "***")                       // Reference Label
+        );
+
+    // Adiciona o ID do CRC16 no final
+    payload += "6304";
     
+    // Calcula o código verificador real baseado nos dados acima
+    payload += crc16(payload);
+
+    // Gera o QR Code visual
     const qr = new QRious({
         element: document.getElementById('qr-pix'),
         value: payload, 
-        size: 150
+        size: 200,
+        level: 'M' // Nível médio de correção de erro (melhor leitura)
     });
     
-    document.getElementById("pix-copia-cola").value = `Chave: ${chave} | Valor: R$ ${valor.toFixed(2)}`;
+    // Coloca o código no input para copiar
+    document.getElementById("pix-copia-cola").value = payload;
 }
 
 function copiarPix() {

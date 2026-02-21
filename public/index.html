@@ -284,6 +284,14 @@
         </div>
     </div>
 
+    <div id="update-toast" class="glass-panel" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10000; align-items: center; gap: 15px; padding: 15px 25px; border: 1px solid var(--primary); width: 90%; max-width: 400px; justify-content: space-between;">
+        <div style="display: flex; flex-direction: column;">
+            <strong style="color: white;">Nova versão disponível!</strong>
+            <span style="font-size: 12px; color: var(--text-muted);">Atualize para ver as mudanças.</span>
+        </div>
+        <button onclick="window.location.reload()" class="btn-small bg-green" style="margin: 0; padding: 10px 20px;">ATUALIZAR</button>
+    </div>
+
     <div id="toast-container"></div>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -316,6 +324,50 @@
         }
 
         document.addEventListener("DOMContentLoaded", carregarComponentes);
+
+        // Registro do Service Worker com detecção de atualização
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').then((registration) => {
+                    console.log('Service Worker registrado com sucesso:', registration.scope);
+
+                    // Verifica se há um SW esperando (atualização baixada mas não ativa)
+                    if (registration.waiting) {
+                        mostrarNotificacaoAtualizacao();
+                    }
+
+                    // Monitora novas atualizações chegando
+                    registration.onupdatefound = () => {
+                        const installingWorker = registration.installing;
+                        installingWorker.onstatechange = () => {
+                            if (installingWorker.state === 'installed') {
+                                if (navigator.serviceWorker.controller) {
+                                    // Nova atualização disponível!
+                                    mostrarNotificacaoAtualizacao();
+                                } else {
+                                    console.log('Conteúdo cacheado para uso offline.');
+                                }
+                            }
+                        };
+                    };
+                }).catch((error) => {
+                    console.log('Falha ao registrar Service Worker:', error);
+                });
+            });
+
+            // Recarrega a página se o SW mudar (garante que a nova versão rode)
+            let refreshing;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (refreshing) return;
+                window.location.reload();
+                refreshing = true;
+            });
+        }
+
+        function mostrarNotificacaoAtualizacao() {
+            const toast = document.getElementById('update-toast');
+            if (toast) toast.style.display = 'flex';
+        }
     </script>
 
     <script src="js/script.js"></script>
