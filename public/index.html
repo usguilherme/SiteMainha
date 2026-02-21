@@ -132,6 +132,21 @@
                     <div id="data-hoje" class="date-badge">Carregando...</div>
                 </div>
                 <div class="user-profile">
+                    
+                    <div class="notification-wrapper" onclick="toggleNotificacoes()">
+                        <i data-lucide="bell"></i>
+                        <span id="badge-notificacao" class="notification-badge" style="display:none">0</span>
+                        
+                        <div id="dropdown-notificacoes" class="notification-dropdown">
+                            <div class="dropdown-header">
+                                <strong>Agenda de Amanhã</strong>
+                            </div>
+                            <div id="lista-notificacoes-itens" class="dropdown-content">
+                                <p style="padding:15px; opacity:0.5; font-size:12px">Nenhum agendamento para amanhã.</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="notification-btn" title="Resetar Dados (Teste)" onclick="resetarSistema()">
                         <i data-lucide="trash-2" style="color: #f43f5e;"></i>
                     </div>
@@ -282,7 +297,6 @@
                 'estoque', 'financeiro', 'servicos', 'despesas'
             ];
 
-            // Promessa para carregar todas as páginas
             const loads = paginas.map(async (pagina) => {
                 try {
                     const response = await fetch(`pages/${pagina}.html`);
@@ -295,15 +309,9 @@
                 }
             });
 
-            // Aguarda tudo carregar
             await Promise.all(loads);
-            
             console.log("Sistema montado com sucesso!");
-            
-            // Inicia os ícones do Lucide
             lucide.createIcons();
-
-            // Dispara evento para o script.js saber que pode rodar
             document.dispatchEvent(new Event('sistemaPronto'));
         }
 
