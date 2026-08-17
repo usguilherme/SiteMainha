@@ -29,7 +29,12 @@
 </div>
 
 <div class="glass-panel mt-15" style="margin-bottom: 80px;">
-    <h3>Extrato de Lançamentos</h3>
+    <div class="table-header" style="flex-wrap: wrap; gap: 10px;">
+        <h3 style="margin:0;">Extrato de Lançamentos</h3>
+        <select id="financeiro-filtro-profissional" class="modern-input compact" style="width:auto;" onchange="atualizarKPIs(); renderTabelaFinanceiro();">
+            <option value="">Todas as Profissionais</option>
+        </select>
+    </div>
     <div class="table-responsive" style="overflow-x: auto;">
         <table class="modern-table" style="min-width: 500px;">
             <thead><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th>Valor</th></tr></thead>

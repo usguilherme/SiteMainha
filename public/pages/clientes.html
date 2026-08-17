@@ -4,6 +4,9 @@
             <i data-lucide="search"></i>
             <input type="text" id="busca-cliente" placeholder="Buscar por nome..." onkeyup="filtrarClientes()" class="search-input" style="width: 100%;">
         </div>
+        <select id="clientes-filtro-profissional" class="modern-input" style="width:auto;" onchange="filtrarClientes()">
+            <option value="">Todas as Profissionais</option>
+        </select>
         <button onclick="abrirModalCliente()" class="btn-primary">+ Novo</button>
     </div>
     

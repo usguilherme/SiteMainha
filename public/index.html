@@ -94,6 +94,9 @@
                 </a>
                 
                 <p class="nav-title">GESTÃO</p>
+                <a onclick="abrirAba('profissionais')" class="nav-item">
+                    <i data-lucide="user-cog"></i> Profissionais
+                </a>
                 <a onclick="abrirAba('clientes')" class="nav-item">
                     <i data-lucide="users"></i> Clientes VIP
                 </a>
@@ -160,6 +163,7 @@
                 <section id="dashboard" class="aba ativa fade-in"></section>
                 <section id="agenda" class="aba fade-in" style="display:none"></section>
                 <section id="novo_atendimento" class="aba fade-in" style="display:none"></section>
+                <section id="profissionais" class="aba fade-in" style="display:none"></section>
                 <section id="clientes" class="aba fade-in" style="display:none"></section>
                 <section id="estoque" class="aba fade-in" style="display:none"></section>
                 <section id="financeiro" class="aba fade-in" style="display:none"></section>
@@ -301,7 +305,7 @@
     <script>
         async function carregarComponentes() {
             const paginas = [
-                'dashboard', 'agenda', 'novo_atendimento', 'clientes', 
+                'dashboard', 'agenda', 'novo_atendimento', 'profissionais', 'clientes', 
                 'estoque', 'financeiro', 'servicos', 'despesas'
             ];
 

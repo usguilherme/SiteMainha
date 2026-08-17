@@ -1,0 +1,16 @@
+<div class="glass-panel form-inline">
+    <input type="hidden" id="id-profissional-edicao">
+    <div class="mobile-stack" style="display:flex; gap:10px; width:100%;">
+        <input type="text" id="prof-nome" placeholder="Nome da Profissional" class="modern-input" style="flex:2;">
+        <input type="tel" id="prof-telefone" placeholder="WhatsApp (opcional)" class="modern-input" style="flex:1;">
+    </div>
+    <div class="mt-10">
+        <input type="text" id="prof-especialidade" placeholder="Especialidade (Ex: Manicure, Pedicure...)" class="modern-input">
+    </div>
+
+    <div class="action-buttons mt-10 mobile-stack">
+        <button onclick="salvarProfissionalCad()" id="btn-salvar-profissional" class="btn-primary full-width">Salvar</button>
+        <button onclick="cancelarEdicaoProfissional()" id="btn-cancelar-profissional" class="btn-danger full-width" style="display:none; margin-top:10px;">✕</button>
+    </div>
+</div>
+<div id="lista-profissionais-cad" class="grid-cards mt-15" style="margin-bottom: 80px;"></div>

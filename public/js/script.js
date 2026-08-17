@@ -31,6 +31,7 @@ let store = {
     atendimentos: [],
     despesas: [],
     estoque: [], 
+    profissionais: [],
     carrinho: []
 };
 
@@ -42,6 +43,7 @@ let idServicoEdicao = null;
 let idAtendimentoEdicao = null; 
 let idProdutoEdicao = null; 
 let idClienteEdicao = null; 
+let idProfissionalEdicao = null; 
 let clienteAnamneseAtual = null;
 
 // Controle de Item Pendente (Novo Preço)
@@ -234,6 +236,7 @@ function fazerBackup() {
         "Data": formatarData(a.data),
         "Hora": a.hora,
         "Cliente": a.nomeCliente,
+        "Profissional": a.nomeProfissional || "-",
         "Itens Vendidos": a.servicos ? a.servicos.map(s => s.nome).join(", ") : "",
         "Total (R$)": a.total,
         "Forma Pagto": a.pagamento,
@@ -260,6 +263,15 @@ function fazerBackup() {
     }));
     const wsDespesas = XLSX.utils.json_to_sheet(dadosDespesas);
     XLSX.utils.book_append_sheet(wb, wsDespesas, "Despesas");
+
+    // --- ABA 5: PROFISSIONAIS ---
+    const dadosProfissionais = store.profissionais.map(p => ({
+        "Nome": p.nome,
+        "Especialidade": p.especialidade || "-",
+        "Telefone": p.telefone || "-"
+    }));
+    const wsProfissionais = XLSX.utils.json_to_sheet(dadosProfissionais);
+    XLSX.utils.book_append_sheet(wb, wsProfissionais, "Profissionais");
 
     // --- DOWNLOAD ---
     XLSX.writeFile(wb, `Gestao_CassiaNunes_${dataHoje}.xlsx`);
@@ -330,6 +342,18 @@ function inicializarSistema() {
         store.estoque = snap.val() ? Object.values(snap.val()) : [];
         renderEstoque();
         renderServicosPDV(); 
+    });
+
+    // NOVO: Profissionais
+    db.ref('profissionais').on('value', snap => {
+        store.profissionais = snap.val() ? Object.values(snap.val()) : [];
+        renderListaProfissionaisCad();
+        renderSelectsProfissionais();
+        renderAgenda();
+        renderTabelaFinanceiro();
+        atualizarKPIs();
+        atualizarGraficos();
+        renderTabelaClientes();
     });
 }
 
@@ -706,12 +730,15 @@ function finalizarVenda() {
     if(store.carrinho.length === 0) return dispararToast("Carrinho vazio!", "error");
 
     const idCliente = document.getElementById("pdv-cliente").value;
+    const idProfissional = document.getElementById("pdv-profissional") ? document.getElementById("pdv-profissional").value : "";
     const pagamento = document.getElementById("pdv-pagamento").value;
     const retorno = document.getElementById("pdv-retorno").value;
     const obs = document.getElementById("pdv-obs").value;
     
     // Captura a data que está no campo visual
     const dataSelecionada = document.getElementById("pdv-data").value;
+
+    if(!idProfissional) return dispararToast("Selecione quem atendeu!", "error");
 
     const total = store.carrinho.reduce((acc, i) => acc + parseFloat(i.preco), 0);
 
@@ -723,6 +750,10 @@ function finalizarVenda() {
         if(c) nomeCliente = c.nome;
     }
 
+    let nomeProfissional = "";
+    const prof = store.profissionais.find(x => x.id == idProfissional);
+    if(prof) nomeProfissional = prof.nome;
+
     const id = idAtendimentoEdicao || Date.now();
     const atendimento = {
         id,
@@ -732,6 +763,8 @@ function finalizarVenda() {
         timestamp: Date.now(),
         clienteId: idCliente || null,
         nomeCliente: nomeCliente,
+        profissionalId: idProfissional,
+        nomeProfissional: nomeProfissional,
         servicos: store.carrinho,
         total: total,
         pagamento: pagamento,
@@ -778,6 +811,7 @@ function finalizarVenda() {
     document.getElementById("pdv-obs").value = "";
     document.getElementById("pdv-retorno").value = "";
     document.getElementById("pdv-cliente").value = "";
+    if(document.getElementById("pdv-profissional")) document.getElementById("pdv-profissional").value = "";
     if(document.getElementById("pdv-dias-retorno")) document.getElementById("pdv-dias-retorno").value = "";
 
     // Reseta a data para HOJE para a próxima venda
@@ -818,6 +852,7 @@ function editarAtendimento(id) {
 
     // 2. Carrega os outros dados
     document.getElementById("pdv-cliente").value = a.clienteId || "";
+    if(document.getElementById("pdv-profissional")) document.getElementById("pdv-profissional").value = a.profissionalId || "";
     store.carrinho = a.servicos ? [...a.servicos] : [];
     document.getElementById("pdv-pagamento").value = a.pagamento || "Dinheiro";
     document.getElementById("pdv-obs").value = a.obs || "";
@@ -875,8 +910,11 @@ function renderAgenda() {
     const diaEl = document.getElementById("agenda-dia-semana");
     if(diaEl) diaEl.innerText = dataObj.toLocaleDateString('pt-BR', options);
 
+    const filtroProfissional = document.getElementById("agenda-filtro-profissional") ? document.getElementById("agenda-filtro-profissional").value : "";
+
     const agendaDoDia = store.atendimentos
         .filter(a => a.data === dataSelecionada)
+        .filter(a => !filtroProfissional || a.profissionalId == filtroProfissional)
         .sort((a,b) => b.timestamp - a.timestamp);
 
     if(agendaDoDia.length === 0) {
@@ -890,6 +928,7 @@ function renderAgenda() {
                 <strong style="font-size:18px">${a.hora}</strong>
                 <h4>${a.nomeCliente}</h4>
                 <small class="text-muted">${a.servicos.map(s => s.nome).join(", ")}</small>
+                ${a.nomeProfissional ? `<br><span class="badge" style="background:#8b5cf620; color:#8b5cf6; margin-top:4px; display:inline-block;">💅 ${a.nomeProfissional}</span>` : ''}
             </div>
             <div style="display:flex; align-items:center; gap:10px">
                 <h3 style="color:var(--success); margin-right:10px">R$ ${a.total.toFixed(2)}</h3>
@@ -899,20 +938,6 @@ function renderAgenda() {
         </div>
     `).join("");
     lucide.createIcons();
-}
-
-function editarAtendimento(id) {
-    const a = store.atendimentos.find(item => item.id === id);
-    if (!a) return;
-    idAtendimentoEdicao = id;
-    document.getElementById("pdv-cliente").value = a.clienteId || "";
-    store.carrinho = a.servicos ? [...a.servicos] : [];
-    document.getElementById("pdv-pagamento").value = a.pagamento || "Dinheiro";
-    document.getElementById("pdv-obs").value = a.obs || "";
-    document.getElementById("pdv-retorno").value = a.previsaoRetorno || "";
-    renderCarrinho();
-    abrirAba('novo_atendimento');
-    dispararToast("Modo de edição ativado para: " + a.nomeCliente);
 }
 
 // ==========================================
@@ -925,7 +950,7 @@ function renderTabelaClientes() {
         const telefoneClean = c.telefone ? c.telefone.replace(/\D/g, '') : '';
         const linkZap = telefoneClean ? `https://wa.me/55${telefoneClean}?text=Olá ${c.nome}, Cassia Nunes passando para confirmar seu horário!` : '#';
         
-        return `<tr>
+        return `<tr data-cliente-id="${c.id}">
             <td style="display:flex; align-items:center; gap:10px">
                 <div class="avatar" style="background-image:url('${c.foto || ''}'); background-size:cover;">${c.foto ? '' : c.nome[0]}</div>
                 <div>
@@ -951,6 +976,7 @@ function renderTabelaClientes() {
         </tr>`
     }).join("");
     lucide.createIcons();
+    if(document.getElementById("busca-cliente") || document.getElementById("clientes-filtro-profissional")) filtrarClientes();
 }
 
 function excluirCliente(id) {
@@ -1333,9 +1359,112 @@ function cancelarEdicaoServico() {
     document.getElementById("btn-cancelar-servico").style.display = "none";
 }
 
+// ==========================================
+// PROFISSIONAIS (CADASTRO E FILTROS)
+// ==========================================
+function salvarProfissionalCad() {
+    const nome = document.getElementById("prof-nome").value.trim();
+    const telefone = document.getElementById("prof-telefone").value.trim();
+    const especialidade = document.getElementById("prof-especialidade").value.trim();
+    if(!nome) return dispararToast("Preencha o nome da profissional!", "error");
+
+    if (idProfissionalEdicao) {
+        db.ref(`profissionais/${idProfissionalEdicao}`).update({ nome, telefone, especialidade })
+            .then(() => dispararToast("Profissional atualizada!"));
+        cancelarEdicaoProfissional();
+    } else {
+        const id = Date.now();
+        db.ref(`profissionais/${id}`).set({ id, nome, telefone, especialidade, ativo: true });
+        dispararToast("Profissional cadastrada!");
+        document.getElementById("prof-nome").value = "";
+        document.getElementById("prof-telefone").value = "";
+        document.getElementById("prof-especialidade").value = "";
+    }
+}
+
+function renderListaProfissionaisCad() {
+    const div = document.getElementById("lista-profissionais-cad");
+    if(!div) return;
+    if(store.profissionais.length === 0) {
+        div.innerHTML = "<p class='text-muted' style='text-align:center; padding:20px;'>Nenhuma profissional cadastrada ainda.</p>";
+        return;
+    }
+    div.innerHTML = store.profissionais.map(p => `<div class="glass-panel" style="padding:15px; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+        <div>
+            <strong>${p.nome}</strong><br>
+            <span class="text-muted" style="font-size:12px;">${p.especialidade || 'Profissional'}${p.telefone ? ' · ' + p.telefone : ''}</span>
+        </div>
+        <div style="display:flex; gap:10px">
+            <button class="btn-small bg-yellow" onclick="prepararEdicaoProfissional(${p.id})" title="Editar"><i data-lucide="pencil" style="width:14px"></i></button>
+            <button class="btn-small bg-purple" onclick="excluirProfissional(${p.id})" title="Excluir"><i data-lucide="trash-2" style="width:14px"></i></button>
+        </div>
+    </div>`).join("");
+    lucide.createIcons();
+}
+
+function prepararEdicaoProfissional(id) {
+    const p = store.profissionais.find(x => x.id === id);
+    if(!p) return;
+    document.getElementById("prof-nome").value = p.nome;
+    document.getElementById("prof-telefone").value = p.telefone || "";
+    document.getElementById("prof-especialidade").value = p.especialidade || "";
+    idProfissionalEdicao = id;
+    const btn = document.getElementById("btn-salvar-profissional");
+    if(btn) { btn.innerText = "ATUALIZAR"; btn.style.background = "var(--warning)"; }
+    document.getElementById("btn-cancelar-profissional").style.display = "block";
+    document.getElementById("profissionais").scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelarEdicaoProfissional() {
+    idProfissionalEdicao = null;
+    document.getElementById("prof-nome").value = "";
+    document.getElementById("prof-telefone").value = "";
+    document.getElementById("prof-especialidade").value = "";
+    const btn = document.getElementById("btn-salvar-profissional");
+    if(btn) { btn.innerText = "Salvar"; btn.style.background = ""; }
+    document.getElementById("btn-cancelar-profissional").style.display = "none";
+}
+
+function excluirProfissional(id) {
+    if(confirm("Excluir esta profissional? O histórico de vendas dela será mantido, mas ela some dos filtros.")) {
+        db.ref(`profissionais/${id}`).remove().then(() => dispararToast("Profissional removida!", "error"));
+    }
+}
+
+// Popula todos os <select> de filtro/seleção de profissional espalhados pelo sistema
+function renderSelectsProfissionais() {
+    const opcoes = store.profissionais
+        .slice()
+        .sort((a,b) => a.nome.localeCompare(b.nome))
+        .map(p => `<option value="${p.id}">${p.nome}</option>`).join("");
+
+    // Select do PDV/Caixa (obrigatório escolher quem atendeu)
+    const selPdv = document.getElementById("pdv-profissional");
+    if(selPdv) {
+        const valorAtual = selPdv.value;
+        selPdv.innerHTML = `<option value="">Selecione...</option>${opcoes}`;
+        if(valorAtual) selPdv.value = valorAtual;
+    }
+
+    // Selects de filtro (Agenda, Financeiro, Dashboard, Clientes) - todos têm opção "Todas"
+    ["agenda-filtro-profissional", "financeiro-filtro-profissional", "dash-filtro-profissional", "clientes-filtro-profissional"].forEach(idSel => {
+        const sel = document.getElementById(idSel);
+        if(sel) {
+            const valorAtual = sel.value;
+            sel.innerHTML = `<option value="">Todas as Profissionais</option>${opcoes}`;
+            if(valorAtual) sel.value = valorAtual;
+        }
+    });
+}
+
 function atualizarKPIs() {
+    const filtroDash = document.getElementById("dash-filtro-profissional") ? document.getElementById("dash-filtro-profissional").value : "";
+    const filtroFin = document.getElementById("financeiro-filtro-profissional") ? document.getElementById("financeiro-filtro-profissional").value : "";
+
     const hoje = new Date().toISOString().split('T')[0];
-    const atendimentosHoje = store.atendimentos.filter(a => a.data === hoje);
+    const atendimentosHoje = store.atendimentos
+        .filter(a => a.data === hoje)
+        .filter(a => !filtroDash || a.profissionalId == filtroDash);
     const fatHoje = atendimentosHoje.reduce((acc, a) => acc + a.total, 0);
     const retornosPendentes = store.clientes.filter(c => c.previsaoRetorno && c.previsaoRetorno <= hoje).length;
     const totalPontos = store.clientes.reduce((acc, c) => acc + (c.pontos || 0), 0);
@@ -1346,7 +1475,10 @@ function atualizarKPIs() {
     document.getElementById("dash-pontos").innerText = totalPontos;
     
     const mesAtual = new Date().getMonth();
-    const entMes = store.atendimentos.filter(a => new Date(a.data).getMonth() === mesAtual).reduce((acc, a) => acc + a.total, 0);
+    const entMes = store.atendimentos
+        .filter(a => new Date(a.data).getMonth() === mesAtual)
+        .filter(a => !filtroFin || a.profissionalId == filtroFin)
+        .reduce((acc, a) => acc + a.total, 0);
     const saiMes = store.despesas.filter(d => new Date(d.data).getMonth() === mesAtual).reduce((acc, d) => acc + d.valor, 0);
     document.getElementById("fin-entradas").innerText = `R$ ${entMes.toFixed(2)}`;
     document.getElementById("fin-saidas").innerText = `R$ ${saiMes.toFixed(2)}`;
@@ -1355,8 +1487,14 @@ function atualizarKPIs() {
 
 function renderTabelaFinanceiro() {
     const tbody = document.getElementById("tabela-financeiro");
-    const receitas = store.atendimentos.map(a => ({ data: a.data, desc: `Venda: ${a.nomeCliente}`, tipo: 'entrada', valor: a.total }));
-    const saidas = store.despesas.map(d => ({ data: d.data, desc: d.descricao, tipo: 'saida', valor: d.valor }));
+    if(!tbody) return;
+    const filtroFin = document.getElementById("financeiro-filtro-profissional") ? document.getElementById("financeiro-filtro-profissional").value : "";
+
+    const receitas = store.atendimentos
+        .filter(a => !filtroFin || a.profissionalId == filtroFin)
+        .map(a => ({ data: a.data, desc: `Venda: ${a.nomeCliente}${a.nomeProfissional ? ' (💅 ' + a.nomeProfissional + ')' : ''}`, tipo: 'entrada', valor: a.total }));
+    // Despesas são do salão como um todo, então só aparecem quando não há filtro de profissional específico
+    const saidas = filtroFin ? [] : store.despesas.map(d => ({ data: d.data, desc: d.descricao, tipo: 'saida', valor: d.valor }));
     const extrato = [...receitas, ...saidas].sort((a,b) => new Date(b.data) - new Date(a.data));
     tbody.innerHTML = extrato.map(item => `<tr><td>${formatarData(item.data)}</td><td>${item.desc}</td><td><span class="badge" style="${item.tipo==='entrada'?'background:#10b98120;color:#10b981':'background:#f43f5e20;color:#f43f5e'}">${item.tipo.toUpperCase()}</span></td><td>R$ ${item.valor.toFixed(2)}</td></tr>`).join("");
 }
@@ -1401,8 +1539,12 @@ function atualizarGraficos() {
         document.getElementById("dash-grafico-fim").value = dataFim;
     }
 
-    // Filtrar atendimentos dentro do período selecionado
-    const atendimentosFiltrados = store.atendimentos.filter(a => a.data >= dataInicio && a.data <= dataFim);
+    const filtroDash = document.getElementById("dash-filtro-profissional") ? document.getElementById("dash-filtro-profissional").value : "";
+
+    // Filtrar atendimentos dentro do período selecionado (e por profissional, se selecionado)
+    const atendimentosFiltrados = store.atendimentos
+        .filter(a => a.data >= dataInicio && a.data <= dataFim)
+        .filter(a => !filtroDash || a.profissionalId == filtroDash);
 
     // 1. Lógica do Gráfico de Rosca (Serviços)
     const contagem = {}; 
@@ -1443,6 +1585,7 @@ function atualizarGraficos() {
         
         const totalDoDia = store.atendimentos
             .filter(a => a.data === dataStr)
+            .filter(a => !filtroDash || a.profissionalId == filtroDash)
             .reduce((acc, curr) => acc + parseFloat(curr.total), 0);
             
         faturamentosRange.push(totalDoDia);
@@ -1480,11 +1623,22 @@ function atualizarGraficos() {
 }
 
 function filtrarClientes() {
-    const termo = document.getElementById("busca-cliente").value.toLowerCase();
+    const inputBusca = document.getElementById("busca-cliente");
+    if(!inputBusca) return;
+    const termo = inputBusca.value.toLowerCase();
+    const filtroProfissional = document.getElementById("clientes-filtro-profissional") ? document.getElementById("clientes-filtro-profissional").value : "";
     const linhas = document.querySelectorAll("#tabela-clientes tr");
     linhas.forEach(linha => {
         const txt = linha.innerText.toLowerCase();
-        linha.style.display = txt.includes(termo) ? "" : "none";
+        const bateTexto = txt.includes(termo);
+
+        let bateProfissional = true;
+        if(filtroProfissional) {
+            const clienteId = linha.getAttribute("data-cliente-id");
+            bateProfissional = store.atendimentos.some(a => a.clienteId == clienteId && a.profissionalId == filtroProfissional);
+        }
+
+        linha.style.display = (bateTexto && bateProfissional) ? "" : "none";
     });
 }
 

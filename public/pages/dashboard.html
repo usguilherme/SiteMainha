@@ -4,6 +4,12 @@
     </div>
     
     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; width: 100%;">
+        <span class="label-small" style="width: 100%;">Profissional:</span>
+        <select id="dash-filtro-profissional" class="modern-input compact" style="flex: 1;" onchange="atualizarKPIs(); atualizarGraficos();">
+            <option value="">Todas as Profissionais</option>
+        </select>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; width: 100%;">
         <span class="label-small" style="width: 100%;">Período:</span>
         <input type="date" id="dash-grafico-inicio" class="modern-input compact" style="flex: 1;" onchange="atualizarGraficos()">
         <span class="text-muted">até</span>
