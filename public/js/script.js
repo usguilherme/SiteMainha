@@ -946,15 +946,18 @@ function renderAgenda() {
 function renderTabelaClientes() {
     const tbody = document.getElementById("tabela-clientes");
     if(!tbody) return;
+    const hojeMesDia = new Date().toISOString().slice(5, 10); // "MM-DD"
     tbody.innerHTML = store.clientes.map(c => {
         const telefoneClean = c.telefone ? c.telefone.replace(/\D/g, '') : '';
         const linkZap = telefoneClean ? `https://wa.me/55${telefoneClean}?text=Olá ${c.nome}, Cassia Nunes passando para confirmar seu horário!` : '#';
+        const ehAniversarioHoje = c.dataNasc && c.dataNasc.slice(5, 10) === hojeMesDia;
+        const linkZapAniversario = telefoneClean ? `https://wa.me/55${telefoneClean}?text=${encodeURIComponent(`Feliz Aniversário, ${c.nome}! 🎉🎂 A equipe Cassia Nunes deseja um dia repleto de alegria. Contamos com sua visita para comemorar com um mimo especial! 💖`)}` : '#';
         
         return `<tr data-cliente-id="${c.id}">
             <td style="display:flex; align-items:center; gap:10px">
                 <div class="avatar" style="background-image:url('${c.foto || ''}'); background-size:cover;">${c.foto ? '' : c.nome[0]}</div>
                 <div>
-                    <strong style="cursor:pointer; color:var(--primary)" onclick="abrirModalAnamnese(${c.id})" title="Ver Histórico Completo">${c.nome}</strong><br>
+                    <strong style="cursor:pointer; color:var(--primary)" onclick="abrirModalAnamnese(${c.id})" title="Ver Histórico Completo">${c.nome}</strong> ${ehAniversarioHoje ? '<span title="Aniversário hoje!">🎂</span>' : ''}<br>
                     <span style="font-size:12px; opacity:0.7">${c.telefone || 'Sem telefone'}</span>
                 </div>
             </td>
@@ -969,6 +972,7 @@ function renderTabelaClientes() {
                     <i data-lucide="clipboard-list" style="width:16px; height:16px;"></i>
                 </button>
                 ${telefoneClean ? `<a href="${linkZap}" target="_blank"><button class="btn-small bg-green" title="WhatsApp"><i data-lucide="message-circle" style="width:16px; height:16px;"></i></button></a>` : ''}
+                ${ehAniversarioHoje && telefoneClean ? `<a href="${linkZapAniversario}" target="_blank"><button class="btn-small" style="background:#f59e0b; color:white;" title="Enviar Parabéns no WhatsApp"><i data-lucide="cake" style="width:16px; height:16px;"></i></button></a>` : ''}
                 <button class="btn-small" onclick="excluirCliente(${c.id})" title="Excluir" style="background: var(--danger); color: white;">
                     <i data-lucide="trash-2" style="width:16px; height:16px;"></i>
                 </button>
@@ -1366,19 +1370,24 @@ function salvarProfissionalCad() {
     const nome = document.getElementById("prof-nome").value.trim();
     const telefone = document.getElementById("prof-telefone").value.trim();
     const especialidade = document.getElementById("prof-especialidade").value.trim();
+    let comissao = parseFloat(document.getElementById("prof-comissao").value);
+    if(isNaN(comissao)) comissao = 0;
+    if(comissao < 0) comissao = 0;
+    if(comissao > 100) comissao = 100;
     if(!nome) return dispararToast("Preencha o nome da profissional!", "error");
 
     if (idProfissionalEdicao) {
-        db.ref(`profissionais/${idProfissionalEdicao}`).update({ nome, telefone, especialidade })
+        db.ref(`profissionais/${idProfissionalEdicao}`).update({ nome, telefone, especialidade, comissao })
             .then(() => dispararToast("Profissional atualizada!"));
         cancelarEdicaoProfissional();
     } else {
         const id = Date.now();
-        db.ref(`profissionais/${id}`).set({ id, nome, telefone, especialidade, ativo: true });
+        db.ref(`profissionais/${id}`).set({ id, nome, telefone, especialidade, comissao, ativo: true });
         dispararToast("Profissional cadastrada!");
         document.getElementById("prof-nome").value = "";
         document.getElementById("prof-telefone").value = "";
         document.getElementById("prof-especialidade").value = "";
+        document.getElementById("prof-comissao").value = "";
     }
 }
 
@@ -1392,7 +1401,8 @@ function renderListaProfissionaisCad() {
     div.innerHTML = store.profissionais.map(p => `<div class="glass-panel" style="padding:15px; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
         <div>
             <strong>${p.nome}</strong><br>
-            <span class="text-muted" style="font-size:12px;">${p.especialidade || 'Profissional'}${p.telefone ? ' · ' + p.telefone : ''}</span>
+            <span class="text-muted" style="font-size:12px;">${p.especialidade || 'Profissional'}${p.telefone ? ' · ' + p.telefone : ''}</span><br>
+            <span class="badge" style="background:#8b5cf620; color:#8b5cf6; margin-top:4px; display:inline-block; font-size:11px;">Repassa ${p.comissao || 0}% ao salão</span>
         </div>
         <div style="display:flex; gap:10px">
             <button class="btn-small bg-yellow" onclick="prepararEdicaoProfissional(${p.id})" title="Editar"><i data-lucide="pencil" style="width:14px"></i></button>
@@ -1408,6 +1418,7 @@ function prepararEdicaoProfissional(id) {
     document.getElementById("prof-nome").value = p.nome;
     document.getElementById("prof-telefone").value = p.telefone || "";
     document.getElementById("prof-especialidade").value = p.especialidade || "";
+    document.getElementById("prof-comissao").value = p.comissao || "";
     idProfissionalEdicao = id;
     const btn = document.getElementById("btn-salvar-profissional");
     if(btn) { btn.innerText = "ATUALIZAR"; btn.style.background = "var(--warning)"; }
@@ -1420,6 +1431,7 @@ function cancelarEdicaoProfissional() {
     document.getElementById("prof-nome").value = "";
     document.getElementById("prof-telefone").value = "";
     document.getElementById("prof-especialidade").value = "";
+    document.getElementById("prof-comissao").value = "";
     const btn = document.getElementById("btn-salvar-profissional");
     if(btn) { btn.innerText = "Salvar"; btn.style.background = ""; }
     document.getElementById("btn-cancelar-profissional").style.display = "none";
@@ -1483,6 +1495,23 @@ function atualizarKPIs() {
     document.getElementById("fin-entradas").innerText = `R$ ${entMes.toFixed(2)}`;
     document.getElementById("fin-saidas").innerText = `R$ ${saiMes.toFixed(2)}`;
     document.getElementById("fin-lucro").innerText = `R$ ${(entMes - saiMes).toFixed(2)}`;
+
+    // Repasse (comissão) da profissional selecionada para o salão
+    const cardRepasse = document.getElementById("card-repasse-profissional");
+    if(cardRepasse) {
+        const prof = filtroFin ? store.profissionais.find(p => p.id == filtroFin) : null;
+        if(prof) {
+            const percent = prof.comissao || 0;
+            const valorRepasse = entMes * (percent / 100);
+            document.getElementById("repasse-nome-prof").innerText = prof.nome;
+            document.getElementById("repasse-percent").innerText = percent;
+            document.getElementById("repasse-valor").innerText = `R$ ${valorRepasse.toFixed(2)}`;
+            document.getElementById("repasse-base").innerText = entMes.toFixed(2);
+            cardRepasse.style.display = "block";
+        } else {
+            cardRepasse.style.display = "none";
+        }
+    }
 }
 
 function renderTabelaFinanceiro() {
