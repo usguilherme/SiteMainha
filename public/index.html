@@ -140,6 +140,11 @@
                 </div>
                 <div class="user-profile">
 
+                    <!-- NOVO: BOTÃO MODO TV -->
+                    <div class="notification-btn" title="Modo TV / Recepção" onclick="abrirModoTV()">
+                        <i data-lucide="tv"></i>
+                    </div>
+
                     <div class="notification-btn" title="Alternar Tema Claro/Escuro" onclick="alternarTema()">
                         <i data-lucide="sun-moon" id="icone-tema"></i>
                     </div>
@@ -199,6 +204,36 @@
             <i data-lucide="menu"></i> +Menu
         </a>
     </nav>
+
+    <!-- MODO TV / PAINEL DE RECEPÇÃO -->
+    <div id="modal-modo-tv" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:#09090b; z-index:999999; padding:40px; box-sizing:border-box; color:white; font-family:var(--font-display);">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid rgba(255,255,255,0.1); padding-bottom:20px; margin-bottom:30px;">
+            <div>
+                <h1 style="font-size:36px; margin:0; letter-spacing:2px;" class="text-gradient">CASSIA NUNES</h1>
+                <p style="color:var(--text-muted); margin:5px 0 0 0; font-size:16px;">Painel de Recepção em Tempo Real</p>
+            </div>
+            <div id="relogio-tv" style="font-size:32px; font-weight:800; background:rgba(255,255,255,0.05); padding:10px 25px; border-radius:12px; border:1px solid rgba(255,255,255,0.1);">00:00:00</div>
+            <button onclick="fecharModoTV()" style="background:var(--danger); border:none; color:white; padding:12px 24px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:16px;">Sair da TV</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; height: calc(100vh - 150px);">
+            <!-- Coluna Esquerda: Chamada Atual / Destaque -->
+            <div class="glass-panel" style="padding: 30px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border: 2px solid var(--primary);">
+                <span class="badge" style="background:#d946ef20; color:#d946ef; font-size:14px; padding:6px 16px; margin-bottom:20px;">⚡ ATENDIMENTO ATUAL / PRÓXIMO</span>
+                <h2 id="tv-cliente-atual" style="font-size: 48px; margin: 10px 0; color: #fff;">Aguardando...</h2>
+                <p id="tv-servico-atual" style="font-size: 20px; color: var(--text-muted); margin: 0;">--</p>
+                <div style="margin-top: 30px; font-size: 22px; background: rgba(139, 92, 246, 0.1); padding: 10px 30px; border-radius: 8px; color: #a78bfa;" id="tv-prof-atual">Profissional: --</div>
+            </div>
+
+            <!-- Coluna Direita: Fila do Dia -->
+            <div class="glass-panel" style="padding: 25px; overflow-y: auto;">
+                <h3 style="margin-top:0; font-size:20px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px;">📋 Fila de Hoje</h3>
+                <div id="tv-lista-fila">
+                    <p style="opacity: 0.5; text-align: center; margin-top: 40px;">Nenhum cliente na fila.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div id="modal-anamnese" class="modal-backdrop" style="display:none">
         <div class="glass-card modal-window">

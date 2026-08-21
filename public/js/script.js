@@ -1590,10 +1590,10 @@ function atualizarKPIs() {
     const retornosPendentes = store.clientes.filter(c => c.previsaoRetorno && c.previsaoRetorno <= hoje).length;
     const totalPontos = store.clientes.reduce((acc, c) => acc + (c.pontos || 0), 0);
     
-    document.getElementById("dash-faturamento").innerText = `R$ ${fatHoje.toFixed(2)}`;
-    document.getElementById("dash-atendimentos").innerText = atendimentosHoje.length;
-    document.getElementById("dash-retornos").innerText = retornosPendentes;
-    document.getElementById("dash-pontos").innerText = totalPontos;
+    animarContador("dash-faturamento", fatHoje, true);
+    animarContador("dash-atendimentos", atendimentosHoje.length, false);
+    animarContador("dash-retornos", retornosPendentes, false);
+    animarContador("dash-pontos", totalPontos, false);
     
     const mesAtual = new Date().getMonth();
     const entMes = store.atendimentos
@@ -1960,3 +1960,119 @@ function handleTouchEnd(e) {
     }
     startX = 0; currentX = 0;
 }
+
+// ==========================================
+// 16. EFEITO TICKER (CONTADOR ANIMADO DE VALORES)
+// ==========================================
+function animarContador(elementoId, valorFinal, ehMoeda = true) {
+    const el = document.getElementById(elementoId);
+    if (!el) return;
+
+    // Se houver um skeleton ativo, limpa primeiro
+    if (el.querySelector('.skeleton')) {
+        el.innerHTML = '';
+    }
+
+    const valorInicial = parseFloat(el.innerText.replace('R$', '').replace('.', '').replace(',', '.')) || 0;
+    const duracao = 800; // Duração em milissegundos
+    const passos = 30;
+    const incremento = (valorFinal - valorInicial) / passos;
+    let atual = valorInicial;
+    let passoAtual = 0;
+
+    const timer = setInterval(() => {
+        passoAtual++;
+        atual += incremento;
+        if (passoAtual >= passos) {
+            atual = valorFinal;
+            clearInterval(timer);
+        }
+        
+        if (ehMoeda) {
+            el.innerText = `R$ ${atual.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        } else {
+            el.innerText = Math.round(atual);
+        }
+    }, duracao / passos);
+}
+
+
+// ==========================================
+// 17. MODO TV / PAINEL DE RECEPÇÃO
+// ==========================================
+let timerRelogioTV = null;
+
+function abrirModoTV() {
+    const modal = document.getElementById("modal-modo-tv");
+    if(modal) modal.style.display = 'block';
+    
+    // Inicia relógio em tempo real
+    atualizarRelogioTV();
+    timerRelogioTV = setInterval(atualizarRelogioTV, 1000);
+    
+    renderizarDadosModoTV();
+}
+
+function fecharModoTV() {
+    const modal = document.getElementById("modal-modo-tv");
+    if(modal) modal.style.display = 'none';
+    if(timerRelogioTV) clearInterval(timerRelogioTV);
+}
+
+function atualizarRelogioTV() {
+    const relogio = document.getElementById("relogio-tv");
+    if(relogio) {
+        const agora = new Date();
+        relogio.innerText = agora.toLocaleTimeString('pt-BR');
+    }
+}
+
+function renderizarDadosModoTV() {
+    const hoje = new Date().toISOString().split('T')[0];
+    const atendimentosHoje = store.atendimentos
+        .filter(a => a.data === hoje)
+        .sort((a, b) => a.hora.localeCompare(b.hora));
+
+    const elCliente = document.getElementById("tv-cliente-atual");
+    const elServico = document.getElementById("tv-servico-atual");
+    const elProf = document.getElementById("tv-prof-atual");
+    const elFila = document.getElementById("tv-lista-fila");
+
+    if (atendimentosHoje.length === 0) {
+        if(elCliente) elCliente.innerText = "Nenhum agendamento hoje";
+        if(elServico) elServico.innerText = "Aproveite o dia!";
+        if(elProf) elProf.innerText = "Salão Livre";
+        if(elFila) elFila.innerHTML = "<p style='opacity:0.5; text-align:center;'>Sem clientes na fila.</p>";
+        return;
+    }
+
+    // O primeiro da lista do dia vira o destaque principal
+    const principal = atendimentosHoje[0];
+    if(elCliente) elCliente.innerText = principal.nomeCliente;
+    if(elServico) elServico.innerText = principal.servicos.map(s => s.nome).join(" + ");
+    if(elProf) elProf.innerText = `Profissional: ${principal.nomeProfissional || 'Geral'}`;
+
+    // O restante vai para a fila lateral
+    const restante = atendimentosHoje.slice(1);
+    if(elFila) {
+        if (restante.length === 0) {
+            elFila.innerHTML = "<p style='opacity:0.5; text-align:center; margin-top:20px;'>Fila encerrada para hoje!</p>";
+        } else {
+            elFila.innerHTML = restante.map(a => `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 15px; margin-bottom:10px; background:rgba(255,255,255,0.03); border-radius:10px; border:1px solid rgba(255,255,255,0.05);">
+                    <div>
+                        <strong style="font-size:18px; color:#fff;">${a.nomeCliente}</strong><br>
+                        <small style="color:var(--text-muted);">${a.servicos.map(s => s.nome).join(", ")}</small>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-size:18px; font-weight:bold; color:var(--success);">${a.hora}</span><br>
+                        <small style="color:#a78bfa;">${a.nomeProfissional || ''}</small>
+                    </div>
+                </div>
+            `).join("");
+        }
+    }
+}
+
+
+
