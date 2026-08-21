@@ -3,16 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agendamento Online - Salão</title>
-    <!-- Usamos o mesmo design system que você já tem -->
-    <link rel="stylesheet" href="style.css"> 
+    <title>Agendamento Online - Cássia Nunes</title>
+    <!-- Certifique-se de que o caminho do CSS aponta para o seu style.css -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            height: auto !important;
+            overflow-y: auto !important;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .agendar-container {
+            width: 100%;
+            max-width: 480px;
+            padding: 30px;
+        }
+    </style>
 </head>
-<body style="padding: 20px; max-width: 500px; margin: 0 auto; height: auto; overflow-y: auto;">
+<body>
 
-    <div class="glass-panel" style="margin-top: 20px;">
-        <h2 class="text-gradient" style="text-align: center; margin-bottom: 20px;">Agende seu Horário</h2>
+    <div class="glass-panel agendar-container fade-in">
+        <div style="text-align: center; margin-bottom: 25px;">
+            <h2 class="text-gradient" style="font-family: var(--font-display); font-size: 24px; font-weight: 700;">Cássia Nunes</h2>
+            <p style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">Agende seu horário com facilidade</p>
+        </div>
         
-        <div class="form-group" style="flex-direction: column; align-items: stretch; gap: 15px;">
+        <div style="display: flex; flex-direction: column; gap: 16px;">
             <div>
                 <label class="label-small">Seu Nome Completo</label>
                 <input type="text" id="pub-nome" class="modern-input" placeholder="Ex: Maria Silva">
@@ -24,32 +45,40 @@
             </div>
 
             <div>
-                <label class="label-small">Escolha o Serviço</label>
-                <select id="pub-servico" class="modern-input">
-                    <!-- Será preenchido via JavaScript puxando do Firebase -->
+                <label class="label-small">Profissional Preferida</label>
+                <select id="pub-profissional" class="modern-input">
+                    <option value="">Qualquer profissional disponível</option>
                 </select>
             </div>
 
             <div>
-                <label class="label-small">Data Desejada</label>
-                <input type="date" id="pub-data" class="modern-input">
+                <label class="label-small">Escolha o Serviço</label>
+                <select id="pub-servico" class="modern-input">
+                    <option value="">Carregando serviços...</option>
+                </select>
             </div>
 
-            <div>
-                <label class="label-small">Horário</label>
-                <input type="time" id="pub-hora" class="modern-input">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div>
+                    <label class="label-small">Data Desejada</label>
+                    <input type="date" id="pub-data" class="modern-input">
+                </div>
+                <div>
+                    <label class="label-small">Horário</label>
+                    <input type="time" id="pub-hora" class="modern-input">
+                </div>
             </div>
 
-            <button onclick="salvarAgendamentoPublico()" class="btn-glow" style="margin-top: 10px;">CONFIRMAR AGENDAMENTO</button>
+            <button onclick="salvarAgendamentoPublico()" class="btn-glow" style="margin-top: 10px; width: 100%;">CONFIRMAR AGENDAMENTO</button>
         </div>
     </div>
 
-    <!-- Firebase SDKs -->
+    <!-- Firebase SDKs Compat -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     
     <script>
-        // Configuração do Firebase (mesma do seu script.js)
+        // Configuração do Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyCpNsnwOVDLSZfXn-g6SE1V69BXHs8cYEc",
             authDomain: "mainhasite.firebaseapp.com",
@@ -59,28 +88,66 @@
             messagingSenderId: "11190400668",
             appId: "1:11190400668:web:b59e8c134fbaee3e121f59"
         };
-        firebase.initializeApp(firebaseConfig);
+        
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
         const db = firebase.database();
 
-        // Carregar serviços ao abrir a página
-        db.ref('servicos').once('value', snap => {
-            const servicos = snap.val() ? Object.values(snap.val()) : [];
+        // 1. Carrega os Serviços do Banco de Dados ordenados alfabeticamente
+        db.ref('servicos').once('value').then(snap => {
+            const servicosObj = snap.val() ? snap.val() : {};
+            let servicos = Object.values(servicosObj);
+            
             const sel = document.getElementById("pub-servico");
+            if (servicos.length === 0) {
+                sel.innerHTML = '<option value="">Nenhum serviço cadastrado</option>';
+                return;
+            }
+
+            // Ordena os serviços por nome de A a Z
+            servicos.sort((a, b) => a.nome.localeCompare(b.nome));
+
             sel.innerHTML = '<option value="">Selecione o serviço...</option>' + 
-                servicos.map(s => `<option value="${s.nome}" data-preco="${s.preco}">${s.nome} - R$ ${s.preco}</option>`).join('');
+                servicos.map(s => `<option value="${s.nome}" data-preco="${s.preco}">${s.nome} - R$ ${parseFloat(s.preco).toFixed(2)}</option>`).join('');
+        }).catch(err => {
+            console.error("Erro ao carregar serviços:", err);
         });
 
+        // 2. Carrega as Profissionais do Banco de Dados ordenadas alfabeticamente
+        db.ref('profissionais').once('value').then(snap => {
+            const profsObj = snap.val() ? snap.val() : {};
+            let profissionais = Object.values(profsObj);
+
+            const sel = document.getElementById("pub-profissional");
+            
+            // Ordena as profissionais por nome de A a Z
+            profissionais.sort((a, b) => a.nome.localeCompare(b.nome));
+
+            sel.innerHTML = '<option value="">Qualquer profissional disponível</option>' + 
+                profissionais.map(p => `<option value="${p.id}" data-nome="${p.nome}">${p.nome}</option>`).join('');
+        }).catch(err => {
+            console.error("Erro ao carregar profissionais:", err);
+        });
+
+        // 3. Salva o Agendamento direto na Agenda do Salão
         function salvarAgendamentoPublico() {
-            const nome = document.getElementById("pub-nome").value;
-            const tel = document.getElementById("pub-tel").value;
+            const nome = document.getElementById("pub-nome").value.trim();
+            const tel = document.getElementById("pub-tel").value.trim();
+            
             const servicoSelect = document.getElementById("pub-servico");
             const servicoNome = servicoSelect.value;
             const precoServico = parseFloat(servicoSelect.options[servicoSelect.selectedIndex]?.getAttribute('data-preco')) || 0;
+
+            const profSelect = document.getElementById("pub-profissional");
+            const profId = profSelect.value;
+            const profNome = profSelect.options[profSelect.selectedIndex]?.getAttribute('data-nome') || "Geral";
+
             const data = document.getElementById("pub-data").value;
             const hora = document.getElementById("pub-hora").value;
 
             if(!nome || !tel || !servicoNome || !data || !hora) {
-                alert("Por favor, preencha todos os campos!");
+                alert("Por favor, preencha todos os campos obrigatórios!");
                 return;
             }
 
@@ -92,7 +159,9 @@
                 timestamp: Date.now(),
                 nomeCliente: nome,
                 telefoneCliente: tel,
-                servicos: [{ nome: servicoNome, preco: precoServico, tipo: 'servico' }],
+                profissionalId: profId || null,
+                nomeProfissional: profNome,
+                servicos: [{ id: Date.now(), nome: servicoNome, preco: precoServico, tipo: 'servico' }],
                 total: precoServico,
                 pagamento: "Pendente",
                 obs: "Agendado via Link Público"
@@ -100,11 +169,11 @@
 
             db.ref(`atendimentos/${id}`).set(novoAtendimento)
                 .then(() => {
-                    alert("🎉 Agendamento realizado com sucesso! Te esperamos no salão.");
+                    alert("🎉 Agendamento realizado com sucesso! Aguardamos sua visita.");
                     location.reload();
                 })
                 .catch(err => {
-                    alert("Erro ao agendar. Tente novamente.");
+                    alert("Erro ao realizar o agendamento. Tente novamente.");
                     console.error(err);
                 });
         }
