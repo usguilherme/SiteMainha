@@ -1,4 +1,4 @@
-const VERSAO = 'v2'; // <--- MUDE ISSO A CADA DEPLOY (v3, v4...) PARA O CELULAR SABER QUE MUDOU
+const VERSAO = 'v3'; // <--- MUDE ISSO A CADA DEPLOY (v3, v4...) PARA O CELULAR SABER QUE MUDOU
 const CACHE_NAME = `cassia-nunes-${VERSAO}`;
 
 // Arquivos que serão salvos para funcionar Offline
@@ -8,6 +8,17 @@ const urlsToCache = [
   './css/style.css',
   './js/script.js',
   './manifest.json',
+  // --- PÁGINAS MODULARES (Garante o funcionamento Offline) ---
+  './pages/dashboard.html',
+  './pages/agenda.html',
+  './pages/novo_atendimento.html',
+  './pages/profissionais.html',
+  './pages/clientes.html',
+  './pages/estoque.html',
+  './pages/financeiro.html',
+  './pages/servicos.html',
+  './pages/despesas.html',
+  // -----------------------------------------------------------
   'https://unpkg.com/lucide@latest',
   'https://cdn.jsdelivr.net/npm/chart.js',
   'https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js',

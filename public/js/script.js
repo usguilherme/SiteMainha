@@ -83,6 +83,7 @@ function atualizarIconeTema() {
 // 2. CONTROLE DE INICIALIZAÇÃO (NOVO)
 // ==========================================
 
+
 // Escuta o evento que vem do index.html quando os arquivos .html terminam de carregar
 document.addEventListener('sistemaPronto', () => {
     console.log("DOM Modular carregado.");
@@ -209,8 +210,7 @@ function logout() {
 function resetarSistema() {
     const user = auth.currentUser;
     if (!user) {
-        alert("Você precisa estar logado para fazer isso.");
-        return;
+       alert("Você precisa estar logado para fazer isso.", "error");        return;
     }
     const senhaLogin = prompt("⚠️ PERIGO: Esta ação apagará TODOS os dados.\n\nPara confirmar, digite sua SENHA DE LOGIN:");
     if (!senhaLogin) return; 
@@ -227,19 +227,19 @@ function resetarSistema() {
                     })
                     .catch((erro) => {
                         console.error(erro);
-                        alert("Erro ao apagar dados: " + erro.message);
+                        alert("Erro ao apagar dados: " + erro.message, "error");
                     });
             }
         })
         .catch((error) => {
             console.error("Erro de autenticação:", error);
-            alert("⛔ Senha incorreta! Ação bloqueada por segurança.");
+            alert("⛔ Senha incorreta! Ação bloqueada por segurança.", "error");
         });
 }
 
 function fazerBackup() {
     if (typeof XLSX === 'undefined') {
-        alert("Erro: Biblioteca Excel não carregada.");
+        dispararToast("Erro: Biblioteca Excel não carregada.", "error");
         return;
     }
 
@@ -347,7 +347,8 @@ function inicializarSistema() {
         renderAniversariantesDashboard();
     });
 
-    db.ref('atendimentos').on('value', snap => {
+    // --- MODIFICADO: Carrega apenas os últimos 500 atendimentos ---
+    db.ref('atendimentos').orderByChild('timestamp').limitToLast(500).on('value', snap => {
         store.atendimentos = snap.val() ? Object.values(snap.val()) : [];
         atualizarKPIs();
         renderTabelaFinanceiro();
@@ -358,7 +359,8 @@ function inicializarSistema() {
         verificarNotificacoes(); 
     });
 
-    db.ref('despesas').on('value', snap => {
+    // --- MODIFICADO: Carrega apenas as últimas 300 despesas ---
+    db.ref('despesas').orderByKey().limitToLast(300).on('value', snap => {
         store.despesas = snap.val() ? Object.values(snap.val()) : [];
         renderTabelaFinanceiro();
         renderListaGestaoDespesas();
@@ -412,7 +414,7 @@ function salvarConfiguracoes() {
             fecharModal('modal-config');
             atualizarKPIs(); 
         })
-        .catch(erro => alert("Erro ao salvar: " + erro.message));
+        .catch(erro => dispararToast("Erro ao salvar: " + erro.message, "error"));
 }
 
 // ==========================================
@@ -576,8 +578,7 @@ function confirmarPreco(isOriginal) {
         // Pega o novo valor do input
         const novoValor = parseFloat(document.getElementById("input-novo-preco").value);
         if (isNaN(novoValor) || novoValor < 0) {
-            alert("Digite um valor válido!");
-            return;
+            dispararToast("Digite um valor válido!", "error");
         }
         itemPendente.preco = novoValor; // Atualiza SÓ para esta venda
         store.carrinho.push(itemPendente);
@@ -1224,7 +1225,7 @@ function renderGaleriaFotos() {
 function salvarAnamnese() {
     const titulo = document.getElementById("anam-titulo").value;
     const obs = document.getElementById("anam-obs").value;
-    if(!titulo) return alert("Preencha o título!");
+    if(!titulo) return dispararToast("Preencha o título!", "error");
     const novo = { data: new Date().toLocaleDateString('pt-BR'), titulo, obs };
     db.ref(`clientes/${clienteAnamneseAtual.id}/historico`).push(novo).then(() => {
         document.getElementById("anam-titulo").value = "";
@@ -1238,7 +1239,7 @@ function salvarFotoGaleria() {
     const input = document.getElementById("input-foto-galeria");
     const desc = document.getElementById("desc-foto-galeria").value;
     
-    if(!input.files[0]) return alert("Selecione uma foto!");
+    if(!input.files[0]) return dispararToast("Selecione uma foto!", "error");
     
     processarImagem(input.files[0], (base64) => {
         const novaFoto = { data: new Date().toLocaleDateString('pt-BR'), desc: desc || "Sem descrição", img: base64 };
@@ -1357,8 +1358,8 @@ function lancarDespesa() {
     const valor = parseFloat(document.getElementById("desp-valor").value);
     const data = document.getElementById("desp-data").value;
     const cat = document.getElementById("desp-cat").value;
-    if(!desc || isNaN(valor) || !data) return alert("Preencha tudo!");
-
+    if(!desc || isNaN(valor) || !data) return dispararToast("Preencha tudo!", "error");
+    
     if (idDespesaEdicao) {
         db.ref(`despesas/${idDespesaEdicao}`).update({ descricao: desc, valor: valor, data: data, categoria: cat }).then(() => dispararToast("Despesa atualizada!"));
         cancelarEdicaoDespesa();
@@ -1833,3 +1834,12 @@ document.addEventListener('input', function (e) {
         target.value = !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : '');
     }
 });
+
+// --- FUNÇÃO DE DEBOUNCE ---
+let timeoutBuscaCliente;
+function filtrarClientesDebounced() {
+    clearTimeout(timeoutBuscaCliente);
+    timeoutBuscaCliente = setTimeout(() => {
+        filtrarClientes();
+    }, 300); // Aguarda 300ms após o usuário parar de digitar
+}

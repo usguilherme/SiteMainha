@@ -2,7 +2,7 @@
     <div class="table-header" style="flex-wrap: wrap; gap: 10px;">
         <div class="search-box" style="flex: 1; min-width: 200px;">
             <i data-lucide="search"></i>
-            <input type="text" id="busca-cliente" placeholder="Buscar por nome..." onkeyup="filtrarClientes()" class="search-input" style="width: 100%;">
+            <input type="text" id="busca-cliente" placeholder="Buscar por nome..." onkeyup="filtrarClientesDebounced()" class="search-input" style="width: 100%;">
         </div>
         <select id="clientes-filtro-profissional" class="modern-input" style="width:auto;" onchange="filtrarClientes()">
             <option value="">Todas as Profissionais</option>
