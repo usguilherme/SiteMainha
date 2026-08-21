@@ -694,3 +694,39 @@ button { font-family: var(--font-main); letter-spacing: 0.02em; }
     color: white; font-weight: bold; font-size: 14px;
 }
 
+
+/* =========================================
+   14. REFINAMENTOS PREMIUM (UI/UX)
+   ========================================= */
+
+/* Harmonização do Padding dos botões do rodapé lateral */
+.sidebar-footer .btn-backup, 
+.sidebar-footer .btn-logout {
+    padding: 12px 16px; /* Mesmo padding dos nav-items */
+    border-radius: 10px;
+    width: 100%;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* Alinha o texto e ícone com o menu de cima */
+    gap: 12px;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+/* Centralizando apenas o ícone de logout mobile caso exista */
+.sidebar-footer .btn-logout {
+    margin-top: 10px;
+}
+
+/* Responsividade: Empilhar Cards de Métricas no Celular */
+@media (max-width: 768px) {
+    /* Supondo que os seus cards estão em uma div flex ou grid */
+    .dashboard-metrics-container, /* Altere caso tenha usado outro nome de classe na div que envolve os 4 cards */
+    .dashboard-cards {
+        display: grid !important;
+        grid-template-columns: 1fr !important; /* Força empilhar 1 em cima do outro */
+        gap: 15px;
+    }
+}
+

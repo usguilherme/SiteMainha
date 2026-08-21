@@ -331,6 +331,14 @@ function inicializarSistema() {
     
     const agendaDiv = document.getElementById("lista-agenda");
     if(agendaDiv) agendaDiv.innerHTML = `<div class="skeleton skeleton-box"></div><div class="skeleton skeleton-box"></div>`;
+    
+    // NOVO: Proteção dos 4 Cards Superiores com Skeletons
+    const metricasIds = ["dash-faturamento", "dash-atendimentos", "dash-retornos", "dash-pontos"];
+    metricasIds.forEach(id => {
+        const el = document.getElementById(id);
+        // Coloca uma barrinha brilhante no lugar do número provisoriamente
+        if (el) el.innerHTML = `<div class="skeleton" style="height: 28px; width: 70%; margin-top: 5px; border-radius: 6px;"></div>`;
+    });
     // --------------------------------------------
 
     // CARREGAR CONFIGURAÇÕES
