@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agendamento Online - Salão</title>
+    <!-- Usamos o mesmo design system que você já tem -->
+    <link rel="stylesheet" href="style.css"> 
+</head>
+<body style="padding: 20px; max-width: 500px; margin: 0 auto; height: auto; overflow-y: auto;">
+
+    <div class="glass-panel" style="margin-top: 20px;">
+        <h2 class="text-gradient" style="text-align: center; margin-bottom: 20px;">Agende seu Horário</h2>
+        
+        <div class="form-group" style="flex-direction: column; align-items: stretch; gap: 15px;">
+            <div>
+                <label class="label-small">Seu Nome Completo</label>
+                <input type="text" id="pub-nome" class="modern-input" placeholder="Ex: Maria Silva">
+            </div>
+            
+            <div>
+                <label class="label-small">Seu WhatsApp</label>
+                <input type="text" id="pub-tel" class="modern-input" placeholder="(83) 99999-9999">
+            </div>
+
+            <div>
+                <label class="label-small">Escolha o Serviço</label>
+                <select id="pub-servico" class="modern-input">
+                    <!-- Será preenchido via JavaScript puxando do Firebase -->
+                </select>
+            </div>
+
+            <div>
+                <label class="label-small">Data Desejada</label>
+                <input type="date" id="pub-data" class="modern-input">
+            </div>
+
+            <div>
+                <label class="label-small">Horário</label>
+                <input type="time" id="pub-hora" class="modern-input">
+            </div>
+
+            <button onclick="salvarAgendamentoPublico()" class="btn-glow" style="margin-top: 10px;">CONFIRMAR AGENDAMENTO</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    
+    <script>
+        // Configuração do Firebase (mesma do seu script.js)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCpNsnwOVDLSZfXn-g6SE1V69BXHs8cYEc",
+            authDomain: "mainhasite.firebaseapp.com",
+            databaseURL: "https://mainhasite-default-rtdb.firebaseio.com",
+            projectId: "mainhasite",
+            storageBucket: "mainhasite.firebasestorage.app",
+            messagingSenderId: "11190400668",
+            appId: "1:11190400668:web:b59e8c134fbaee3e121f59"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Carregar serviços ao abrir a página
+        db.ref('servicos').once('value', snap => {
+            const servicos = snap.val() ? Object.values(snap.val()) : [];
+            const sel = document.getElementById("pub-servico");
+            sel.innerHTML = '<option value="">Selecione o serviço...</option>' + 
+                servicos.map(s => `<option value="${s.nome}" data-preco="${s.preco}">${s.nome} - R$ ${s.preco}</option>`).join('');
+        });
+
+        function salvarAgendamentoPublico() {
+            const nome = document.getElementById("pub-nome").value;
+            const tel = document.getElementById("pub-tel").value;
+            const servicoSelect = document.getElementById("pub-servico");
+            const servicoNome = servicoSelect.value;
+            const precoServico = parseFloat(servicoSelect.options[servicoSelect.selectedIndex]?.getAttribute('data-preco')) || 0;
+            const data = document.getElementById("pub-data").value;
+            const hora = document.getElementById("pub-hora").value;
+
+            if(!nome || !tel || !servicoNome || !data || !hora) {
+                alert("Por favor, preencha todos os campos!");
+                return;
+            }
+
+            const id = Date.now();
+            const novoAtendimento = {
+                id: id,
+                data: data,
+                hora: hora,
+                timestamp: Date.now(),
+                nomeCliente: nome,
+                telefoneCliente: tel,
+                servicos: [{ nome: servicoNome, preco: precoServico, tipo: 'servico' }],
+                total: precoServico,
+                pagamento: "Pendente",
+                obs: "Agendado via Link Público"
+            };
+
+            db.ref(`atendimentos/${id}`).set(novoAtendimento)
+                .then(() => {
+                    alert("🎉 Agendamento realizado com sucesso! Te esperamos no salão.");
+                    location.reload();
+                })
+                .catch(err => {
+                    alert("Erro ao agendar. Tente novamente.");
+                    console.error(err);
+                });
+        }
+    </script>
+</body>
+</html>
