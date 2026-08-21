@@ -6,6 +6,7 @@
         <div style="display: flex; gap: 10px;">
             <input type="number" id="prod-qtd" placeholder="Qtd" class="modern-input" style="flex: 1;">
             <input type="number" id="prod-preco" placeholder="R$ Venda" class="modern-input" style="flex: 1;">
+            <input type="number" id="prod-qtd-minima" placeholder="Qtd Mínima" class="modern-input" style="flex: 1;" title="Abaixo desse valor, alerta de estoque baixo">
         </div>
         
         <div class="action-buttons" style="width: 100%; display: flex; gap: 10px; margin-top: 10px;">
@@ -13,6 +14,11 @@
             <button onclick="cancelarEdicaoProduto()" id="btn-cancelar-produto" class="btn-danger" style="display:none">✕</button>
         </div>
     </div>
+</div>
+
+<div class="glass-panel mt-15" id="card-estoque-baixo" style="display:none; border: 1px solid rgba(248,113,113,0.4);">
+    <h3>⚠️ Estoque Baixo</h3>
+    <div id="lista-estoque-baixo" class="simple-list mt-10"></div>
 </div>
 
 <div class="glass-panel" style="margin-bottom: 80px;">

@@ -55,6 +55,31 @@ let usuarioLogado = null;
 let sistemaIniciado = false; // Evita rodar inicializarSistema 2x
 
 // ==========================================
+// 1.1 MODO CLARO/ESCURO
+// ==========================================
+function alternarTema() {
+    const html = document.documentElement;
+    const temaAtual = html.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    const novoTema = temaAtual === 'light' ? 'dark' : 'light';
+
+    if (novoTema === 'light') {
+        html.setAttribute('data-theme', 'light');
+    } else {
+        html.removeAttribute('data-theme');
+    }
+    localStorage.setItem('tema', novoTema);
+    atualizarIconeTema();
+}
+
+function atualizarIconeTema() {
+    const icone = document.getElementById('icone-tema');
+    if (!icone) return;
+    const temaAtual = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    icone.setAttribute('data-lucide', temaAtual === 'light' ? 'moon' : 'sun');
+    if (window.lucide) lucide.createIcons();
+}
+
+// ==========================================
 // 2. CONTROLE DE INICIALIZAÇÃO (NOVO)
 // ==========================================
 
@@ -71,6 +96,8 @@ document.addEventListener('sistemaPronto', () => {
     const options = { weekday: 'long', day: 'numeric', month: 'long' };
     const dateEl = document.getElementById("data-hoje");
     if(dateEl) dateEl.innerText = new Date().toLocaleDateString('pt-BR', options);
+
+    atualizarIconeTema();
 
     tentarIniciarSistema();
 });
@@ -317,6 +344,7 @@ function inicializarSistema() {
         renderTabelaClientes();
         atualizarKPIs();
         filtrarRetornosDashboard();
+        renderAniversariantesDashboard();
     });
 
     db.ref('atendimentos').on('value', snap => {
@@ -1017,6 +1045,30 @@ function limparFiltroRetorno() {
     if(input) { input.value = ""; filtrarRetornosDashboard(); }
 }
 
+function renderAniversariantesDashboard() {
+    const card = document.getElementById("card-aniversariantes");
+    const div = document.getElementById("lista-aniversariantes-dashboard");
+    if(!card || !div) return;
+
+    const hojeMesDia = new Date().toISOString().slice(5, 10); // "MM-DD"
+    const aniversariantes = store.clientes.filter(c => c.dataNasc && c.dataNasc.slice(5, 10) === hojeMesDia);
+
+    if(aniversariantes.length === 0) {
+        card.style.display = "none";
+        return;
+    }
+
+    card.style.display = "block";
+    div.innerHTML = aniversariantes.map(c => {
+        const telefoneClean = c.telefone ? c.telefone.replace(/\D/g, '') : '';
+        const linkZapAniversario = telefoneClean ? `https://wa.me/55${telefoneClean}?text=${encodeURIComponent(`Feliz Aniversário, ${c.nome}! 🎉🎂 A equipe Cassia Nunes deseja um dia repleto de alegria. Contamos com sua visita para comemorar com um mimo especial! 💖`)}` : '#';
+        return `<div style="padding:10px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center">
+            <div><strong>🎂 ${c.nome}</strong>${c.telefone ? `<br><small style="opacity:0.7">${c.telefone}</small>` : ''}</div>
+            ${telefoneClean ? `<a href="${linkZapAniversario}" target="_blank" class="btn-small" style="background:#f59e0b; color:white; text-decoration:none">Parabenizar</a>` : '<small style="opacity:0.5">Sem telefone</small>'}
+        </div>`
+    }).join("");
+}
+
 function abrirModalCliente() {
     idClienteEdicao = null;
     document.getElementById("titulo-modal-cliente").innerText = "Novo Cadastro";
@@ -1206,20 +1258,23 @@ function salvarProdutoEstoque() {
     const nome = document.getElementById("prod-nome").value;
     const qtd = parseInt(document.getElementById("prod-qtd").value);
     const preco = parseFloat(document.getElementById("prod-preco").value);
+    let qtdMinima = parseInt(document.getElementById("prod-qtd-minima").value);
+    if(isNaN(qtdMinima)) qtdMinima = 0;
 
     if(!nome || isNaN(qtd) || isNaN(preco)) return dispararToast("Preencha todos os campos!", "error");
 
     if (idProdutoEdicao) {
-        db.ref(`estoque/${idProdutoEdicao}`).update({ nome, qtd, preco })
+        db.ref(`estoque/${idProdutoEdicao}`).update({ nome, qtd, preco, qtdMinima })
             .then(() => dispararToast("Produto atualizado!"));
         cancelarEdicaoProduto();
     } else {
         const id = Date.now();
-        db.ref(`estoque/${id}`).set({ id, nome, qtd, preco })
+        db.ref(`estoque/${id}`).set({ id, nome, qtd, preco, qtdMinima })
             .then(() => dispararToast("Produto cadastrado!"));
         document.getElementById("prod-nome").value = "";
         document.getElementById("prod-qtd").value = "";
         document.getElementById("prod-preco").value = "";
+        document.getElementById("prod-qtd-minima").value = "";
     }
 }
 
@@ -1229,21 +1284,44 @@ function renderEstoque() {
 
     if(store.estoque.length === 0) {
         tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; opacity:0.5'>Estoque vazio.</td></tr>";
+    } else {
+        tbody.innerHTML = store.estoque.map(p => {
+            const estoqueBaixo = p.qtdMinima > 0 && p.qtd <= p.qtdMinima;
+            return `
+            <tr>
+                <td>${p.nome} ${estoqueBaixo ? '<span title="Estoque baixo!">⚠️</span>' : ''}</td>
+                <td style="${estoqueBaixo ? 'color:#f87171; font-weight:700' : ''}">${p.qtd} un</td>
+                <td>R$ ${parseFloat(p.preco).toFixed(2)}</td>
+                <td>
+                    <button class="btn-small bg-yellow" onclick="editarProdutoEstoque(${p.id})"><i data-lucide="pencil" style="width:14px"></i></button>
+                    <button class="btn-small bg-purple" onclick="if(confirm('Excluir produto?')) db.ref('estoque/${p.id}').remove()"><i data-lucide="trash-2" style="width:14px"></i></button>
+                </td>
+            </tr>
+        `}).join("");
+    }
+    lucide.createIcons();
+    renderAlertaEstoqueBaixo();
+}
+
+function renderAlertaEstoqueBaixo() {
+    const card = document.getElementById("card-estoque-baixo");
+    const div = document.getElementById("lista-estoque-baixo");
+    if(!card || !div) return;
+
+    const produtosBaixos = store.estoque.filter(p => p.qtdMinima > 0 && p.qtd <= p.qtdMinima);
+
+    if(produtosBaixos.length === 0) {
+        card.style.display = "none";
         return;
     }
 
-    tbody.innerHTML = store.estoque.map(p => `
-        <tr>
-            <td>${p.nome}</td>
-            <td>${p.qtd} un</td>
-            <td>R$ ${parseFloat(p.preco).toFixed(2)}</td>
-            <td>
-                <button class="btn-small bg-yellow" onclick="editarProdutoEstoque(${p.id})"><i data-lucide="pencil" style="width:14px"></i></button>
-                <button class="btn-small bg-purple" onclick="if(confirm('Excluir produto?')) db.ref('estoque/${p.id}').remove()"><i data-lucide="trash-2" style="width:14px"></i></button>
-            </td>
-        </tr>
+    card.style.display = "block";
+    div.innerHTML = produtosBaixos.map(p => `
+        <div style="padding:10px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center">
+            <div><strong>${p.nome}</strong></div>
+            <span style="color:#f87171; font-weight:700">${p.qtd} un (mín: ${p.qtdMinima})</span>
+        </div>
     `).join("");
-    lucide.createIcons();
 }
 
 function editarProdutoEstoque(id) {
@@ -1254,6 +1332,7 @@ function editarProdutoEstoque(id) {
     document.getElementById("prod-nome").value = p.nome;
     document.getElementById("prod-qtd").value = p.qtd;
     document.getElementById("prod-preco").value = p.preco;
+    document.getElementById("prod-qtd-minima").value = p.qtdMinima || "";
 
     document.getElementById("btn-salvar-produto").innerText = "ATUALIZAR";
     document.getElementById("btn-cancelar-produto").style.display = "inline-block";
@@ -1264,6 +1343,7 @@ function cancelarEdicaoProduto() {
     document.getElementById("prod-nome").value = "";
     document.getElementById("prod-qtd").value = "";
     document.getElementById("prod-preco").value = "";
+    document.getElementById("prod-qtd-minima").value = "";
     document.getElementById("btn-salvar-produto").innerText = "Salvar";
     document.getElementById("btn-cancelar-produto").style.display = "none";
 }
@@ -1702,14 +1782,20 @@ function verificarNotificacoes() {
         badge.innerText = clientesAmanha.length;
         
         // Atualiza a lista
-        lista.innerHTML = clientesAmanha.map(a => `
+        lista.innerHTML = clientesAmanha.map(a => {
+            const cliente = a.clienteId ? store.clientes.find(c => c.id == a.clienteId) : null;
+            const telefoneClean = cliente && cliente.telefone ? cliente.telefone.replace(/\D/g, '') : '';
+            const linkConfirmar = telefoneClean ? `https://wa.me/55${telefoneClean}?text=${encodeURIComponent(`Oi ${a.nomeCliente}! Passando para confirmar seu horário amanhã às ${a.hora} na Cassia Nunes. Podemos confirmar? 💖`)}` : '';
+            return `
             <div class="notif-item">
                 <div>
                     <strong>${a.nomeCliente}</strong>
                     <span>${a.hora} - ${a.servicos.map(s => s.nome).join(", ")}</span>
                 </div>
+                ${linkConfirmar ? `<a href="${linkConfirmar}" target="_blank" class="btn-small bg-green" style="text-decoration:none; white-space:nowrap;" title="Confirmar no WhatsApp"><i data-lucide="message-circle" style="width:14px; height:14px;"></i></a>` : ''}
             </div>
-        `).join("");
+        `}).join("");
+        lucide.createIcons();
     } else {
         badge.style.display = "none";
         lista.innerHTML = `<p style="padding:15px; opacity:0.5; font-size:12px; text-align:center;">Nenhum agendamento para amanhã.</p>`;
