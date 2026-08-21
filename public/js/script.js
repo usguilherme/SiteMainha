@@ -58,18 +58,23 @@
     // 1.1 MODO CLARO/ESCURO
     // ==========================================
     function alternarTema() {
-        const html = document.documentElement;
-        const temaAtual = html.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
-        const novoTema = temaAtual === 'light' ? 'dark' : 'light';
+    const html = document.documentElement;
+    const temaAtual = html.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    const novoTema = temaAtual === 'light' ? 'dark' : 'light';
 
-        if (novoTema === 'light') {
-            html.setAttribute('data-theme', 'light');
-        } else {
-            html.removeAttribute('data-theme');
-        }
-        localStorage.setItem('tema', novoTema);
-        atualizarIconeTema();
+    if (novoTema === 'light') {
+        html.setAttribute('data-theme', 'light');
+    } else {
+        html.removeAttribute('data-theme');
     }
+    localStorage.setItem('tema', novoTema);
+    atualizarIconeTema();
+
+    // Redesenha os gráficos com as cores certas do novo tema
+    if (typeof atualizarGraficos === 'function' && document.getElementById("chartTopServicos")) {
+        atualizarGraficos();
+    }
+}
 
     function atualizarIconeTema() {
         const icone = document.getElementById('icone-tema');
@@ -1685,6 +1690,19 @@ function atualizarKPIs() {
         atualizarGraficos();
     }
     // Gráficos atualizados com filtro por data (Visual Profissional)
+    // Retorna as cores certas pro gráfico de acordo com o tema ativo no momento
+function getCoresGrafico() {
+    const claro = document.documentElement.getAttribute('data-theme') === 'light';
+    return {
+        legenda: claro ? '#374151' : '#ffffff',
+        eixos: claro ? '#4b5563' : '#a1a1aa',
+        gradeLinhas: claro ? 'rgba(20,24,38,0.08)' : 'rgba(255,255,255,0.03)',
+        bordaFatia: claro ? '#ffffff' : '#09090b',
+        pontoFundo: claro ? '#ffffff' : '#09090b'
+    };
+}
+
+// Gráficos atualizados com filtro por data (Visual Profissional)
 function atualizarGraficos() {
     let dataInicio = document.getElementById("dash-grafico-inicio").value;
     let dataFim = document.getElementById("dash-grafico-fim").value;
@@ -1703,6 +1721,7 @@ function atualizarGraficos() {
     }
 
     const filtroDash = document.getElementById("dash-filtro-profissional") ? document.getElementById("dash-filtro-profissional").value : "";
+    const cores = getCoresGrafico();
 
     // Filtrar atendimentos dentro do período selecionado (e por profissional, se selecionado)
     const atendimentosFiltrados = store.atendimentos
@@ -1726,14 +1745,14 @@ function atualizarGraficos() {
             datasets: [{ 
                 data: sorted.map(x => x[1]), 
                 backgroundColor: ['#d946ef', '#8b5cf6', '#6366f1', '#ec4899', '#a855f7'], 
-                borderColor: '#09090b', 
+                borderColor: cores.bordaFatia, 
                 borderWidth: 2 
             }] 
         },
         options: { 
             responsive: true, 
             maintainAspectRatio: false, 
-            plugins: { legend: { position: 'right', labels: { color: '#fff', boxWidth: 10 } } } 
+            plugins: { legend: { position: 'right', labels: { color: cores.legenda, boxWidth: 10 } } } 
         }
     });
 
@@ -1780,7 +1799,7 @@ function atualizarGraficos() {
                     gradient.addColorStop(1, 'rgba(168, 85, 247, 0.0)');
                     return gradient;
                 },
-                pointBackgroundColor: '#09090b', 
+                pointBackgroundColor: cores.pontoFundo, 
                 pointBorderColor: '#a855f7', 
                 pointBorderWidth: 3,
                 pointRadius: 5
@@ -1791,13 +1810,12 @@ function atualizarGraficos() {
             maintainAspectRatio: false, 
             plugins: { legend: { display: false } }, 
             scales: { 
-                y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#a1a1aa' }, beginAtZero: true }, 
-                x: { grid: { display: false }, ticks: { color: '#a1a1aa' } } 
+                y: { grid: { color: cores.gradeLinhas }, ticks: { color: cores.eixos }, beginAtZero: true }, 
+                x: { grid: { display: false }, ticks: { color: cores.eixos } } 
             } 
         }
     });
 }
-
     function filtrarClientes() {
         const inputBusca = document.getElementById("busca-cliente");
         if(!inputBusca) return;
