@@ -1593,7 +1593,6 @@ function renderSelectsProfissionais() {
     });
 }
 
-// Atualiza os cartões de cima (Faturamento, Agendamentos, Retornos e Pontos)
 function atualizarKPIs() {
     try {
         const hojeIso = new Date().toISOString().split('T')[0];
@@ -1604,7 +1603,7 @@ function atualizarKPIs() {
         let retornosPendentes = 0;
         let pontosDistribuidos = 0;
 
-        // 1. Calcula Faturamento e Agendamentos (Blindado contra atraso de dados)
+        // 1. Calcula Atendimentos
         const atendimentos = store.atendimentos || [];
         atendimentos.forEach(a => {
             if (a.data === hojeIso) {
@@ -1614,9 +1613,8 @@ function atualizarKPIs() {
             }
         });
 
-        // 2. Calcula Retornos Pendentes e Pontos VIP (Blindado e convertido)
+        // 2. Calcula Clientes
         const clientes = store.clientes || [];
-        // Converte para array caso o Firebase entregue como objeto
         const listaClientes = Array.isArray(clientes) ? clientes : Object.values(clientes);
         
         listaClientes.forEach(c => {
@@ -1628,7 +1626,6 @@ function atualizarKPIs() {
             }
         });
 
-        // 3. Atualiza a tela e apaga as barras de carregamento (skeletons)
         const elFaturamento = document.getElementById('dash-faturamento');
         const elAtendimentos = document.getElementById('dash-atendimentos');
         const elRetornos = document.getElementById('dash-retornos');
@@ -1636,13 +1633,33 @@ function atualizarKPIs() {
         
         if (elFaturamento) elFaturamento.innerHTML = `R$ ${faturamentoHoje.toFixed(2)}`;
         if (elAtendimentos) elAtendimentos.innerHTML = agendamentosHoje;
-        if (elRetornos) elRetornos.innerHTML = retornosPendentes;
-        if (elPontos) elPontos.innerHTML = pontosDistribuidos;
-
+        
+        // 3. Força a remoção de qualquer barra cinza ou classe de carregamento!
+        if (elRetornos) {
+            elRetornos.innerHTML = retornosPendentes;
+            elRetornos.className = ''; // Arranca as classes antigas
+            elRetornos.style.background = 'transparent'; // Remove o fundo cinza
+            elRetornos.style.color = '#fff'; // Força a cor branca do número
+        }
+        if (elPontos) {
+            elPontos.innerHTML = pontosDistribuidos;
+            elPontos.className = ''; 
+            elPontos.style.background = 'transparent';
+            elPontos.style.color = '#fff';
+        }
     } catch (erro) {
-        console.error("Erro ao atualizar os cartões do Dashboard:", erro);
+        console.error("Erro no Dashboard:", erro);
     }
 }
+
+// O "Pulo do Gato": Trava de segurança que checa a tela a cada 2 segundos.
+// Assim, mesmo que a internet demore, ele atualiza!
+setInterval(() => {
+    const abaDash = document.getElementById('dashboard');
+    if(abaDash && abaDash.style.display !== 'none') {
+        atualizarKPIs();
+    }
+}, 2000);
 
 function renderTabelaFinanceiro() {
     const tbody = document.getElementById("tabela-financeiro");
