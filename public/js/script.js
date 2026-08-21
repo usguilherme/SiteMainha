@@ -551,11 +551,16 @@
     }
 
     function renderClientesPDV() {
-        const sel = document.getElementById("pdv-cliente");
-        if(!sel) return;
-        sel.innerHTML = '<option value="">Cliente Avulso / Sem Cadastro</option>' + 
-            store.clientes.map(c => `<option value="${c.id}">${c.nome}</option>`).join("");
-    }
+    const sel = document.getElementById("pdv-cliente");
+    if(!sel) return;
+
+    // Criamos uma cópia da lista e ordenamos por nome (A-Z)
+    const clientesOrdenados = [...store.clientes].sort((a, b) => a.nome.localeCompare(b.nome));
+
+    // Agora usamos a lista ordenada para gerar os <option>
+    sel.innerHTML = '<option value="">Cliente Avulso / Sem Cadastro</option>' + 
+        clientesOrdenados.map(c => `<option value="${c.id}">${c.nome}</option>`).join("");
+}
 
     // ALTERAÇÃO: Ao clicar em adicionar, abrimos a confirmação de preço
     function adicionarAoCarrinho() {
