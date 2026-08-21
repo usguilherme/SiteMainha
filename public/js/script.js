@@ -325,6 +325,14 @@ function initRippleEffect() {
 function inicializarSistema() {
     console.log("Conectando Listeners do Firebase...");
     
+    // --- INJEÇÃO DO SKELETON ENQUANTO CARREGA ---
+    const tbodyClientes = document.getElementById("tabela-clientes");
+    if(tbodyClientes) tbodyClientes.innerHTML = `<tr><td colspan="5"><div class="skeleton skeleton-box"></div><div class="skeleton skeleton-box"></div></td></tr>`;
+    
+    const agendaDiv = document.getElementById("lista-agenda");
+    if(agendaDiv) agendaDiv.innerHTML = `<div class="skeleton skeleton-box"></div><div class="skeleton skeleton-box"></div>`;
+    // --------------------------------------------
+
     // CARREGAR CONFIGURAÇÕES
     db.ref('config').on('value', snap => {
         if(snap.val()) {
@@ -603,13 +611,19 @@ function renderCarrinho() {
 
     lista.innerHTML = store.carrinho.map((item, index) => {
         total += parseFloat(item.preco);
-        return `<li>
-            <span>${item.tipo === 'produto' ? '📦 ' : '✨ '} ${item.nome}</span>
-            <div style="display:flex; align-items:center; gap:10px">
-                <strong>R$ ${parseFloat(item.preco).toFixed(2)}</strong>
-                <i data-lucide="trash-2" onclick="removerDoCarrinho(${index})" style="width:14px; cursor:pointer; color:#f43f5e"></i>
+        return `
+        <div class="swipe-item-container" data-index="${index}">
+            <div class="swipe-back">
+                <i data-lucide="trash-2" style="margin-right:5px; width:16px;"></i> Apagar
             </div>
-        </li>`;
+            <div class="swipe-front" ontouchstart="handleTouchStart(event)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event)">
+                <span>${item.tipo === 'produto' ? '📦 ' : '✨ '} ${item.nome}</span>
+                <div style="display:flex; align-items:center; gap:10px">
+                    <strong>R$ ${parseFloat(item.preco).toFixed(2)}</strong>
+                    <i data-lucide="trash-2" onclick="removerDoCarrinho(${index})" style="width:14px; cursor:pointer; color:#f43f5e" class="pc-only-trash"></i>
+                </div>
+            </div>
+        </div>`;
     }).join("");
     
     lucide.createIcons();
@@ -808,7 +822,13 @@ function finalizarVenda() {
     } else {
         // --- MODO NOVA VENDA ---
         db.ref(`atendimentos/${id}`).set(atendimento);
-        dispararToast("✅ Venda Finalizada!");
+        
+        // --- NOVO: CONFIRMAÇÃO DE IMPRESSÃO ---
+        if(confirm("✅ Venda Finalizada com sucesso!\n\nDeseja imprimir o Cupom?")) {
+            imprimirCupom(atendimento);
+        } else {
+            dispararToast("Venda salva!", "success");
+        }
         
         if(idCliente) {
             db.ref(`clientes/${idCliente}/pontos`).transaction((pontosAtuais) => {
@@ -1842,4 +1862,93 @@ function filtrarClientesDebounced() {
     timeoutBuscaCliente = setTimeout(() => {
         filtrarClientes();
     }, 300); // Aguarda 300ms após o usuário parar de digitar
+}
+
+
+// ==========================================
+// 14. IMPRESSÃO TÉRMICA (CUPOM 80MM)
+// ==========================================
+function imprimirCupom(atendimento) {
+    // Abre uma janela invisível formatada para impressoras Bluetooth (80mm)
+    const printWindow = window.open('', '_blank', 'width=300,height=600');
+    const htmlCupom = `
+    <html>
+    <head>
+        <title>Recibo</title>
+        <style>
+            body { font-family: 'Courier New', Courier, monospace; font-size: 13px; width: 80mm; margin: 0 auto; padding: 10px; color: #000; background: #fff;}
+            h2 { text-align: center; margin: 0 0 5px 0; font-size: 18px; }
+            p { margin: 3px 0; }
+            .divisor { border-top: 1px dashed #000; margin: 8px 0; }
+            .item { display: flex; justify-content: space-between; margin-bottom: 3px;}
+            .total { font-weight: bold; font-size: 16px; text-align: right; margin-top: 5px; }
+            .center { text-align: center; }
+        </style>
+    </head>
+    <body>
+        <h2>CASSIA NUNES</h2>
+        <p class="center">Beleza & Estética</p>
+        <div class="divisor"></div>
+        <p>Data: ${formatarData(atendimento.data)} - ${atendimento.hora}</p>
+        <p>Cliente: ${atendimento.nomeCliente}</p>
+        <p>Atendente: ${atendimento.nomeProfissional || 'Geral'}</p>
+        <div class="divisor"></div>
+        <p><b>SERVIÇOS / PRODUTOS:</b></p>
+        ${atendimento.servicos.map(s => `<div class="item"><span>${s.nome}</span><span>R$ ${parseFloat(s.preco).toFixed(2)}</span></div>`).join('')}
+        <div class="divisor"></div>
+        <div class="total">TOTAL: R$ ${atendimento.total.toFixed(2)}</div>
+        <p style="text-align:right;">Pagamento: ${atendimento.pagamento}</p>
+        <div class="divisor"></div>
+        <p class="center" style="font-size:11px; margin-top:15px;">Obrigado pela preferência!</p>
+        <p class="center" style="font-size:11px;">Desenvolvido por Guilherme Macario</p>
+        <script>
+            window.onload = () => { window.print(); setTimeout(() => window.close(), 500); }
+        </script>
+    </body>
+    </html>`;
+    
+    printWindow.document.write(htmlCupom);
+    printWindow.document.close();
+}
+
+// ==========================================
+// 15. GESTO NATIVO: SWIPE TO DELETE (CARRINHO)
+// ==========================================
+let startX = 0;
+let currentX = 0;
+
+function handleTouchStart(e) {
+    startX = e.touches[0].clientX;
+    e.currentTarget.style.transition = 'none'; // Tira animação enquanto o dedo segura
+}
+
+function handleTouchMove(e) {
+    if (!startX) return;
+    currentX = e.touches[0].clientX;
+    const diff = currentX - startX;
+    
+    // Só permite arrastar para a ESQUERDA (valores negativos) limitados a 100px
+    if (diff < 0 && diff > -120) {
+        e.currentTarget.style.transform = `translateX(${diff}px)`;
+    }
+}
+
+function handleTouchEnd(e) {
+    if (!startX) return;
+    const diff = currentX - startX;
+    const frontCard = e.currentTarget;
+    const container = frontCard.closest('.swipe-item-container');
+    const index = container.getAttribute('data-index');
+
+    frontCard.style.transition = 'transform 0.2s ease-out'; // Volta animação suave
+    
+    if (diff < -60) {
+        // Se arrastou mais de 60px pra esquerda, joga pra fora e apaga!
+        frontCard.style.transform = `translateX(-100%)`;
+        setTimeout(() => removerDoCarrinho(index), 200);
+    } else {
+        // Se arrastou pouco, volta pro lugar (cancelou a exclusão)
+        frontCard.style.transform = `translateX(0)`;
+    }
+    startX = 0; currentX = 0;
 }
