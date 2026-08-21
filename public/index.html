@@ -116,6 +116,9 @@
                 <a onclick="abrirAba('despesas')" class="nav-item">
                     <i data-lucide="receipt"></i> Despesas
                 </a>
+                <a onclick="abrirAba('rh')" class="nav-item">
+                    <i data-lucide="briefcase"></i> Folha / RH
+                </a>
             </nav>
 
             <div class="sidebar-footer">
@@ -182,6 +185,92 @@
                 <section id="financeiro" class="aba fade-in" style="display:none"></section>
                 <section id="servicos" class="aba fade-in" style="display:none"></section>
                 <section id="despesas" class="aba fade-in" style="display:none"></section>
+                
+                <!-- NOVA ABA: RH -->
+                <section id="rh" class="aba fade-in" style="display:none">
+                    <div class="glass-panel" style="padding: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <div>
+                                <h2 style="color: var(--primary); margin: 0;">Folha de Pagamento / RH</h2>
+                                <p style="color: var(--text-muted); font-size: 14px; margin-top: 5px;">Contratos, vales e fechamento de comissões</p>
+                            </div>
+                        </div>
+                        
+                        <div class="tab-controls" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                            <button class="tab-btn active" onclick="trocarAbaRH('contratos', this)">Contratos</button>
+                            <button class="tab-btn" onclick="trocarAbaRH('vales', this)">Vales / Saques</button>
+                            <button class="tab-btn" onclick="trocarAbaRH('fechamento', this)">Fechamento</button>
+                        </div>
+
+                        <!-- ABA 1: CONTRATOS -->
+                        <div id="tab-rh-contratos" style="display:block">
+                            <p style="opacity: 0.7; font-size: 14px; margin-bottom: 15px;">Os percentuais de comissão são definidos no cadastro de cada profissional.</p>
+                            <div style="overflow-x: auto;">
+                                <table class="modern-table" style="width: 100%;">
+                                    <thead>
+                                        <tr>
+                                            <th>Profissional</th>
+                                            <th>Tipo</th>
+                                            <th>Repasse (Salão)</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabela-rh-contratos">
+                                        <!-- Preenchido via JS futuramente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- ABA 2: VALES E SAQUES -->
+                        <div id="tab-rh-vales" style="display:none">
+                            <div class="glass-panel" style="background: rgba(0,0,0,0.2); padding: 15px; margin-bottom: 20px; display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+                                <div style="flex: 1; min-width: 150px;">
+                                    <label class="label-small">Profissional</label>
+                                    <select id="vale-prof" class="modern-input"></select>
+                                </div>
+                                <div style="flex: 1; min-width: 120px;">
+                                    <label class="label-small">Valor (R$)</label>
+                                    <input type="number" id="vale-valor" class="modern-input" placeholder="0.00">
+                                </div>
+                                <div style="flex: 1; min-width: 130px;">
+                                    <label class="label-small">Data</label>
+                                    <input type="date" id="vale-data" class="modern-input">
+                                </div>
+                                <button class="btn-glow" onclick="lancarVale()" style="margin: 0; height: 42px;">LANÇAR VALE</button>
+                            </div>
+                            
+                            <table class="modern-table" style="width: 100%;">
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Profissional</th>
+                                        <th>Valor Retirado</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-rh-vales">
+                                    <!-- Preenchido via JS futuramente -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- ABA 3: FECHAMENTO -->
+                        <div id="tab-rh-fechamento" style="display:none">
+                            <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 20px;">
+                                <input type="month" id="fechamento-mes" class="modern-input" style="width: 200px;">
+                                <select id="fechamento-prof" class="modern-input" style="width: 250px;">
+                                    <option value="">Selecione a Profissional...</option>
+                                </select>
+                                <button class="btn-glow" onclick="calcularFolha()">GERAR FOLHA</button>
+                            </div>
+                            
+                            <div id="resultado-folha" style="display:none; border: 1px solid var(--primary); border-radius: 10px; padding: 20px; background: rgba(139, 92, 246, 0.05);">
+                                <!-- O holerite gerado vai aparecer aqui -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
             </div>
         </main>
@@ -197,8 +286,8 @@
         <a onclick="abrirAba('novo_atendimento')" class="mobile-nav-item">
             <i data-lucide="sparkles"></i> Venda
         </a>
-        <a onclick="abrirAba('estoque')" class="mobile-nav-item">
-            <i data-lucide="package"></i> Estoque
+        <a onclick="abrirAba('rh')" class="mobile-nav-item">
+            <i data-lucide="briefcase"></i> RH
         </a>
         <a onclick="abrirAba('financeiro')" class="mobile-nav-item">
             <i data-lucide="menu"></i> +Menu
@@ -298,6 +387,19 @@
                 <input type="file" id="novo-cli-foto" accept="image/*" class="modern-input">
                 
                 <button onclick="salvarNovoClienteModal()" class="btn-glow full-width mt-15">SALVAR DADOS</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Histórico Visual Rápido -->
+    <div id="modal-historico-rapido" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+        <div class="glass-panel" style="width:90%; max-width:450px; padding:20px; border-radius:15px; position:relative;">
+            <button onclick="fecharModal('modal-historico-rapido')" style="position:absolute; top:15px; right:15px; background:none; border:none; color:white; font-size:18px; cursor:pointer;">✕</button>
+            
+            <h3 id="rapido-nome-cliente" style="margin-bottom:15px; color:var(--primary);">Nome do Cliente</h3>
+            
+            <div id="rapido-conteudo" style="max-height: 60vh; overflow-y: auto;">
+                <!-- Conteúdo dinâmico injetado via JS -->
             </div>
         </div>
     </div>

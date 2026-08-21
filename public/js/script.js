@@ -1001,6 +1001,7 @@ function renderAgenda() {
             </div>
             <div style="display:flex; align-items:center; gap:10px">
                 <h3 style="color:var(--success); margin-right:10px">R$ ${a.total.toFixed(2)}</h3>
+                ${a.clienteId ? `<button class="btn-small bg-purple" onclick="abrirHistoricoRapido('${a.clienteId}')" title="Ver Histórico Rápido"><i data-lucide="eye" style="width:14px"></i></button>` : ''}
                 <button class="btn-small bg-green" onclick="chamarCliente('${a.id}', '${a.nomeCliente}')" title="Chamar na TV"><i data-lucide="megaphone" style="width:14px"></i></button>
                 <button class="btn-small bg-yellow" onclick="editarAtendimento(${a.id})" title="Editar Venda"><i data-lucide="pencil" style="width:14px"></i></button>
                 <button class="btn-small bg-purple" onclick="if(confirm('Excluir este atendimento?')) db.ref('atendimentos/${a.id}').remove()" title="Excluir"><i data-lucide="trash-2" style="width:14px"></i></button>
@@ -1009,6 +1010,7 @@ function renderAgenda() {
     `).join("");
     lucide.createIcons();
 }
+
 
 // ==========================================
 // 9. CLIENTES, GALERIA & EDIÇÃO
@@ -1591,48 +1593,54 @@ function renderSelectsProfissionais() {
     });
 }
 
+// Atualiza os cartões de cima (Faturamento, Agendamentos, Retornos e Pontos)
 function atualizarKPIs() {
-    const filtroDash = document.getElementById("dash-filtro-profissional") ? document.getElementById("dash-filtro-profissional").value : "";
-    const filtroFin = document.getElementById("financeiro-filtro-profissional") ? document.getElementById("financeiro-filtro-profissional").value : "";
+    try {
+        const hojeIso = new Date().toISOString().split('T')[0];
+        const profFiltro = document.getElementById('dash-filtro-profissional')?.value;
 
-    const hoje = new Date().toISOString().split('T')[0];
-    const atendimentosHoje = store.atendimentos
-        .filter(a => a.data === hoje)
-        .filter(a => !filtroDash || a.profissionalId == filtroDash);
-    const fatHoje = atendimentosHoje.reduce((acc, a) => acc + a.total, 0);
-    const retornosPendentes = store.clientes.filter(c => c.previsaoRetorno && c.previsaoRetorno <= hoje).length;
-    const totalPontos = store.clientes.reduce((acc, c) => acc + (c.pontos || 0), 0);
-    
-    animarContador("dash-faturamento", fatHoje, true);
-    animarContador("dash-atendimentos", atendimentosHoje.length, false);
-    animarContador("dash-retornos", retornosPendentes, false);
-    animarContador("dash-pontos", totalPontos, false);
-    
-    const mesAtual = new Date().getMonth();
-    const entMes = store.atendimentos
-        .filter(a => new Date(a.data).getMonth() === mesAtual)
-        .filter(a => !filtroFin || a.profissionalId == filtroFin)
-        .reduce((acc, a) => acc + a.total, 0);
-    const saiMes = store.despesas.filter(d => new Date(d.data).getMonth() === mesAtual).reduce((acc, d) => acc + d.valor, 0);
-    document.getElementById("fin-entradas").innerText = `R$ ${entMes.toFixed(2)}`;
-    document.getElementById("fin-saidas").innerText = `R$ ${saiMes.toFixed(2)}`;
-    document.getElementById("fin-lucro").innerText = `R$ ${(entMes - saiMes).toFixed(2)}`;
+        let faturamentoHoje = 0;
+        let agendamentosHoje = 0;
+        let retornosPendentes = 0;
+        let pontosDistribuidos = 0;
 
-    // Repasse (comissão) da profissional selecionada para o salão
-    const cardRepasse = document.getElementById("card-repasse-profissional");
-    if(cardRepasse) {
-        const prof = filtroFin ? store.profissionais.find(p => p.id == filtroFin) : null;
-        if(prof) {
-            const percent = prof.comissao || 0;
-            const valorRepasse = entMes * (percent / 100);
-            document.getElementById("repasse-nome-prof").innerText = prof.nome;
-            document.getElementById("repasse-percent").innerText = percent;
-            document.getElementById("repasse-valor").innerText = `R$ ${valorRepasse.toFixed(2)}`;
-            document.getElementById("repasse-base").innerText = entMes.toFixed(2);
-            cardRepasse.style.display = "block";
-        } else {
-            cardRepasse.style.display = "none";
-        }
+        // 1. Calcula Faturamento e Agendamentos (Blindado contra atraso de dados)
+        const atendimentos = store.atendimentos || [];
+        atendimentos.forEach(a => {
+            if (a.data === hojeIso) {
+                if (profFiltro && a.profissionalId !== profFiltro) return; 
+                faturamentoHoje += (Number(a.total) || 0);
+                agendamentosHoje++;
+            }
+        });
+
+        // 2. Calcula Retornos Pendentes e Pontos VIP (Blindado e convertido)
+        const clientes = store.clientes || [];
+        // Converte para array caso o Firebase entregue como objeto
+        const listaClientes = Array.isArray(clientes) ? clientes : Object.values(clientes);
+        
+        listaClientes.forEach(c => {
+            if (c.dataRetorno && c.dataRetorno <= hojeIso) {
+                retornosPendentes++;
+            }
+            if (c.pontos) {
+                pontosDistribuidos += (Number(c.pontos) || 0);
+            }
+        });
+
+        // 3. Atualiza a tela e apaga as barras de carregamento (skeletons)
+        const elFaturamento = document.getElementById('dash-faturamento');
+        const elAtendimentos = document.getElementById('dash-atendimentos');
+        const elRetornos = document.getElementById('dash-retornos');
+        const elPontos = document.getElementById('dash-pontos');
+        
+        if (elFaturamento) elFaturamento.innerHTML = `R$ ${faturamentoHoje.toFixed(2)}`;
+        if (elAtendimentos) elAtendimentos.innerHTML = agendamentosHoje;
+        if (elRetornos) elRetornos.innerHTML = retornosPendentes;
+        if (elPontos) elPontos.innerHTML = pontosDistribuidos;
+
+    } catch (erro) {
+        console.error("Erro ao atualizar os cartões do Dashboard:", erro);
     }
 }
 
@@ -2132,3 +2140,377 @@ function chamarCliente(idAtendimento, nomeCliente) {
     });
 }
 
+
+
+function abrirHistoricoRapido(clienteId) {
+    const cliente = store.clientes.find(c => c.id == clienteId);
+    if (!cliente) {
+        return dispararToast("Cliente sem cadastro detalhado.", "error");
+    }
+
+    document.getElementById("rapido-nome-cliente").innerText = cliente.nome;
+    const container = document.getElementById("rapido-conteudo");
+
+    // Pega a última foto da galeria (se houver)
+    const fotos = cliente.galeria ? Object.values(cliente.galeria) : [];
+    const ultimaFoto = fotos.length > 0 ? fotos[fotos.length - 1] : null;
+
+    // Pega as últimas anotações de anamnese (se houver)
+    const historico = cliente.historico ? Object.values(cliente.historico) : [];
+    const ultimaAnamnese = historico.length > 0 ? historico[historico.length - 1] : null;
+
+    container.innerHTML = `
+        <div style="margin-bottom: 15px; text-align: center;">
+            ${ultimaFoto ? `
+                <img src="${ultimaFoto.img}" style="width: 100%; max-height: 250px; object-fit: cover; border-radius: 10px; margin-bottom: 8px;">
+                <small style="opacity: 0.7; display: block;">Ultima foto (${ultimaFoto.data}): ${ultimaFoto.desc}</small>
+            ` : `<p style="opacity: 0.5; font-size: 13px;">Nenhuma foto salva na galeria.</p>`}
+        </div>
+        
+        <div style="border-top: 1px solid var(--border); padding-top: 12px;">
+            <strong style="font-size: 14px; color: var(--success);">Última Anotação:</strong>
+            ${ultimaAnamnese ? `
+                <p style="font-size: 13px; margin-top: 5px; color: #ddd;"><b>${ultimaAnamnese.titulo}</b> (${ultimaAnamnese.data})</p>
+                <p style="font-size: 12px; opacity: 0.8; margin-top: 2px;">${ultimaAnamnese.obs}</p>
+            ` : `<p style="opacity: 0.5; font-size: 13px; margin-top: 5px;">Nenhuma anotação registrada.</p>`}
+        </div>
+    `;
+
+    document.getElementById("modal-historico-rapido").style.display = "flex";
+    if (window.lucide) lucide.createIcons();
+}
+
+// ==========================================
+// 20. MÓDULO FOLHA DE PAGAMENTO / RH
+// ==========================================
+
+function trocarAbaRH(abaId, btnElement) {
+    // Esconde todas as abas internas do RH
+    const abas = ['contratos', 'vales', 'fechamento'];
+    abas.forEach(a => {
+        const el = document.getElementById('tab-rh-' + a);
+        if(el) el.style.display = 'none';
+    });
+    
+    // Mostra a aba clicada
+    const abaAlvo = document.getElementById('tab-rh-' + abaId);
+    if(abaAlvo) abaAlvo.style.display = 'block';
+    
+    // Atualiza a classe visual dos botões
+    const botoes = btnElement.parentElement.querySelectorAll('.tab-btn');
+    botoes.forEach(b => b.classList.remove('active'));
+    btnElement.classList.add('active');
+}
+
+// ==========================================
+// 20. MÓDULO FOLHA DE PAGAMENTO / RH (LÓGICA)
+// ==========================================
+
+// Garante que o array de vales existe no estado global
+store.vales = [];
+
+// Escuta os vales no Firebase em tempo real
+db.ref('vales').on('value', snap => {
+    store.vales = [];
+    snap.forEach(child => {
+        store.vales.push({ id: child.key, ...child.val() });
+    });
+    renderizarValesRH();
+});
+
+// Essa função preenche as caixas de seleção com o nome das profissionais
+function inicializarDadosRH() {
+    const selectVale = document.getElementById("vale-prof");
+    const selectFechamento = document.getElementById("fechamento-prof");
+    const tabelaContratos = document.getElementById("tabela-rh-contratos");
+
+    if(!selectVale || !tabelaContratos) return;
+
+    let optionsHTML = '<option value="">Selecione a Profissional...</option>';
+    let contratosHTML = '';
+
+    store.profissionais.forEach(p => {
+        optionsHTML += `<option value="${p.id}">${p.nome}</option>`;
+        contratosHTML += `
+            <tr>
+                <td><strong>${p.nome}</strong></td>
+                <td><span class="badge" style="background:#3b82f620; color:#3b82f6; font-size:10px;">COMISSIONADA</span></td>
+                <td><strong style="color:var(--success)">${p.comissao}%</strong></td>
+                <td><button class="btn-small bg-yellow" onclick="abrirAba('profissionais')" title="Editar na aba Profissionais"><i data-lucide="pencil" style="width:14px"></i></button></td>
+            </tr>
+        `;
+    });
+
+    selectVale.innerHTML = optionsHTML;
+    selectFechamento.innerHTML = optionsHTML;
+    tabelaContratos.innerHTML = contratosHTML;
+    
+    if (window.lucide) lucide.createIcons();
+}
+
+// Quando abrir a aba do RH, ele carrega os dados atualizados
+document.addEventListener("sistemaPronto", inicializarDadosRH);
+const observerRH = new MutationObserver((mutations) => {
+    mutations.forEach((m) => {
+        if(m.target.id === 'rh' && m.target.style.display !== 'none') {
+            inicializarDadosRH();
+        }
+    });
+});
+if(document.getElementById('rh')) observerRH.observe(document.getElementById('rh'), { attributes: true, attributeFilter: ['style'] });
+
+
+function lancarVale() {
+    const profId = document.getElementById("vale-prof").value;
+    const valor = parseFloat(document.getElementById("vale-valor").value);
+    const data = document.getElementById("vale-data").value;
+
+    if(!profId || isNaN(valor) || valor <= 0 || !data) {
+        return dispararToast("Preencha todos os campos para lançar o vale.", "error");
+    }
+
+    const prof = store.profissionais.find(p => p.id === profId);
+
+    db.ref('vales').push({
+        profissionalId: profId,
+        nomeProfissional: prof.nome,
+        valor: valor,
+        data: data,
+        timestamp: Date.now()
+    }).then(() => {
+        dispararToast(`Vale de R$ ${valor.toFixed(2)} lançado para ${prof.nome}!`);
+        document.getElementById("vale-valor").value = "";
+        document.getElementById("vale-data").value = "";
+    }).catch(erro => {
+        console.error("Erro ao lançar vale:", erro);
+        dispararToast("Erro ao conectar com o banco de dados.", "error");
+    });
+}
+
+function renderizarValesRH() {
+    const tbody = document.getElementById("tabela-rh-vales");
+    if(!tbody) return;
+
+    if(store.vales.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; opacity:0.5;">Nenhum vale registrado no sistema.</td></tr>';
+        return;
+    }
+
+    const valesOrdenados = [...store.vales].sort((a,b) => b.timestamp - a.timestamp);
+
+    tbody.innerHTML = valesOrdenados.map(v => {
+        const dataFormatada = v.data.split('-').reverse().join('/');
+        return `
+            <tr>
+                <td>${dataFormatada}</td>
+                <td><strong>${v.nomeProfissional}</strong></td>
+                <td style="color:var(--danger); font-weight:bold;">- R$ ${v.valor.toFixed(2)}</td>
+                <td><button class="btn-small bg-purple" onclick="if(confirm('Excluir este vale?')) db.ref('vales/${v.id}').remove()" title="Excluir Vale"><i data-lucide="trash-2" style="width:14px"></i></button></td>
+            </tr>
+        `;
+    }).join('');
+    
+    if (window.lucide) lucide.createIcons();
+}
+
+function calcularFolha() {
+    const mesInput = document.getElementById("fechamento-mes").value; // Formato: "YYYY-MM"
+    const profId = document.getElementById("fechamento-prof").value;
+    const divResultado = document.getElementById("resultado-folha");
+
+    if(!mesInput || !profId) {
+        return dispararToast("Selecione o mês e a profissional para gerar a folha.", "error");
+    }
+
+    const profissional = store.profissionais.find(p => p.id === profId);
+    if(!profissional) return;
+
+    const percentualComissao = parseFloat(profissional.comissao) || 0;
+
+    // 1. Filtrar Atendimentos do Mês selecionado para essa profissional
+    const atendimentosMes = store.atendimentos.filter(a => {
+        return a.profissionalId === profId && a.data.startsWith(mesInput);
+    });
+
+    // 2. Filtrar Vales do Mês selecionado para essa profissional
+    const valesMes = store.vales.filter(v => {
+        return v.profissionalId === profId && v.data.startsWith(mesInput);
+    });
+
+    // 3. Matemática
+    const totalFaturamento = atendimentosMes.reduce((acc, a) => acc + a.total, 0);
+    const totalComissao = totalFaturamento * (percentualComissao / 100);
+    const totalVales = valesMes.reduce((acc, v) => acc + v.valor, 0);
+    const liquidoAPagar = totalComissao - totalVales;
+
+    // 4. Exibir o Holerite
+    const [ano, mes] = mesInput.split('-');
+    const nomeMes = new Date(ano, mes - 1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+
+    divResultado.style.display = "block";
+    divResultado.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px;">
+            <div>
+                <h3 style="margin:0; color:var(--primary); text-transform:uppercase;">Recibo de Pagamento</h3>
+                <p style="margin:5px 0 0 0; color:var(--text-muted);">Profissional: <strong>${profissional.nome}</strong> • Ref: ${nomeMes}</p>
+            </div>
+            <div>
+                <span class="badge" style="background:#10b98120; color:#10b981;">CÁLCULO AUTOMÁTICO</span>
+            </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom: 20px;">
+            <div class="glass-panel" style="padding:15px; background:rgba(0,0,0,0.2);">
+                <small style="color:var(--text-muted)">Total Faturado no Salão</small>
+                <h3 style="margin:5px 0 0 0;">R$ ${totalFaturamento.toFixed(2)}</h3>
+                <small style="color:var(--text-muted)">Serviços realizados: ${atendimentosMes.length}</small>
+            </div>
+            
+            <div class="glass-panel" style="padding:15px; background:rgba(0,0,0,0.2);">
+                <small style="color:var(--text-muted)">Comissão a Receber (${percentualComissao}%)</small>
+                <h3 style="margin:5px 0 0 0; color:var(--success);">+ R$ ${totalComissao.toFixed(2)}</h3>
+            </div>
+            
+            <div class="glass-panel" style="padding:15px; background:rgba(0,0,0,0.2);">
+                <small style="color:var(--text-muted)">Vales e Adiantamentos Retirados</small>
+                <h3 style="margin:5px 0 0 0; color:var(--danger);">- R$ ${totalVales.toFixed(2)}</h3>
+            </div>
+            
+            <div class="glass-panel" style="padding:15px; background:rgba(139, 92, 246, 0.2); border: 1px solid var(--primary);">
+                <small style="color:#a78bfa; font-weight:bold;">LÍQUIDO A PAGAR</small>
+                <h2 style="margin:5px 0 0 0; color:white; font-size:32px;">R$ ${liquidoAPagar.toFixed(2)}</h2>
+            </div>
+        </div>
+    `;
+}
+
+// ==========================================
+// MÓDULO: VISÃO GERAL & GRÁFICOS (DASHBOARD)
+// ==========================================
+
+let chartReceita = null;
+let chartServicos = null;
+
+// Garante que o dashboard carrega quando a aba é aberta
+document.addEventListener("sistemaPronto", () => {
+    setTimeout(() => {
+        atualizarKPIs();
+        atualizarGraficos();
+    }, 500);
+});
+
+// Atualiza os cartões de cima (Faturamento, Agendamentos, etc)
+function atualizarKPIs() {
+    const hojeIso = new Date().toISOString().split('T')[0];
+    const profFiltro = document.getElementById('dash-filtro-profissional')?.value;
+
+    let faturamentoHoje = 0;
+    let agendamentosHoje = 0;
+
+    store.atendimentos.forEach(a => {
+        if (a.data === hojeIso) {
+            // Se tiver filtro de profissional ativado, ignora os de outras
+            if (profFiltro && a.profissionalId !== profFiltro) return; 
+            
+            faturamentoHoje += a.total;
+            agendamentosHoje++;
+        }
+    });
+
+    const elFaturamento = document.getElementById('dash-faturamento');
+    const elAtendimentos = document.getElementById('dash-atendimentos');
+    
+    if (elFaturamento) elFaturamento.innerText = `R$ ${faturamentoHoje.toFixed(2)}`;
+    if (elAtendimentos) elAtendimentos.innerText = agendamentosHoje;
+}
+
+// Desenha os gráficos usando o Chart.js
+function atualizarGraficos() {
+    const ctxSemanal = document.getElementById('chartSemanal');
+    const ctxServicos = document.getElementById('chartTopServicos');
+    
+    if(!ctxSemanal || !ctxServicos) return;
+
+    if(chartReceita) chartReceita.destroy();
+    if(chartServicos) chartServicos.destroy();
+
+    Chart.defaults.color = '#a1a1aa';
+    Chart.defaults.font.family = "'Outfit', sans-serif";
+
+    // 1. Gráfico de Linha (Faturamento no Período - Últimos 7 dias)
+    const ultimos7Dias = [];
+    const dadosReceita = [];
+    
+    for(let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dataIso = d.toISOString().split('T')[0];
+        
+        ultimos7Dias.push(dataIso.split('-').reverse().slice(0,2).join('/')); 
+
+        const totalDia = store.atendimentos
+            .filter(a => a.data === dataIso)
+            .reduce((acc, a) => acc + a.total, 0);
+        
+        dadosReceita.push(totalDia);
+    }
+
+    chartReceita = new Chart(ctxSemanal, {
+        type: 'line',
+        data: {
+            labels: ultimos7Dias,
+            datasets: [{
+                label: 'Faturamento (R$)',
+                data: dadosReceita,
+                borderColor: '#8b5cf6',
+                backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#fff',
+                pointBorderColor: '#8b5cf6',
+                pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // 2. Gráfico de Rosca (Serviços Mais Realizados)
+    const contagemServicos = {};
+    store.atendimentos.forEach(a => {
+        a.servicos.forEach(s => {
+            contagemServicos[s.nome] = (contagemServicos[s.nome] || 0) + 1;
+        });
+    });
+
+    const servicosOrdenados = Object.entries(contagemServicos)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5); // Pega o Top 5
+
+    chartServicos = new Chart(ctxServicos, {
+        type: 'doughnut',
+        data: {
+            labels: servicosOrdenados.map(s => s[0]),
+            datasets: [{
+                data: servicosOrdenados.map(s => s[1]),
+                backgroundColor: ['#8b5cf6', '#d946ef', '#ec4899', '#f43f5e', '#f97316'],
+                borderWidth: 0,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: { legend: { position: 'right' } }
+        }
+    });
+}
