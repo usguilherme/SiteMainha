@@ -730,3 +730,11 @@ button { font-family: var(--font-main); letter-spacing: 0.02em; }
     }
 }
 
+@keyframes piscar {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+
+

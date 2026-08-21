@@ -332,14 +332,26 @@ function inicializarSistema() {
     const agendaDiv = document.getElementById("lista-agenda");
     if(agendaDiv) agendaDiv.innerHTML = `<div class="skeleton skeleton-box"></div><div class="skeleton skeleton-box"></div>`;
     
-    // NOVO: Proteção dos 4 Cards Superiores com Skeletons
+    // Proteção dos 4 Cards Superiores com Skeletons
     const metricasIds = ["dash-faturamento", "dash-atendimentos", "dash-retornos", "dash-pontos"];
     metricasIds.forEach(id => {
         const el = document.getElementById(id);
-        // Coloca uma barrinha brilhante no lugar do número provisoriamente
         if (el) el.innerHTML = `<div class="skeleton" style="height: 28px; width: 70%; margin-top: 5px; border-radius: 6px;"></div>`;
     });
     // --------------------------------------------
+
+    // --- NOVO: OUVINTE DO PAINEL TV ---
+    db.ref('painel_tv').on('value', snap => {
+        const data = snap.val();
+        if (data) {
+            // Toca o som (certifique-se que o arquivo está em assets/ding.mp3)
+            const audio = new Audio('assets/ding.mp3'); 
+            audio.play().catch(e => console.log("Aguardando interação do usuário para áudio"));
+            
+            // Atualiza o visual na TV
+            atualizarVisualModoTV(data.nome);
+        }
+    });
 
     // CARREGAR CONFIGURAÇÕES
     db.ref('config').on('value', snap => {
@@ -989,6 +1001,7 @@ function renderAgenda() {
             </div>
             <div style="display:flex; align-items:center; gap:10px">
                 <h3 style="color:var(--success); margin-right:10px">R$ ${a.total.toFixed(2)}</h3>
+                <button class="btn-small bg-green" onclick="chamarCliente('${a.id}', '${a.nomeCliente}')" title="Chamar na TV"><i data-lucide="megaphone" style="width:14px"></i></button>
                 <button class="btn-small bg-yellow" onclick="editarAtendimento(${a.id})" title="Editar Venda"><i data-lucide="pencil" style="width:14px"></i></button>
                 <button class="btn-small bg-purple" onclick="if(confirm('Excluir este atendimento?')) db.ref('atendimentos/${a.id}').remove()" title="Excluir"><i data-lucide="trash-2" style="width:14px"></i></button>
             </div>
@@ -2075,4 +2088,47 @@ function renderizarDadosModoTV() {
 }
 
 
+// ==========================================
+// 18. ATUALIZAR VISUAL E SOM DA TV
+// ==========================================
+function atualizarVisualModoTV(nome) {
+    const elCliente = document.getElementById("tv-cliente-atual");
+    
+    // Tenta tocar o áudio como reforço visual e sonoro
+    const audio = new Audio('assets/ding.mp3');
+    audio.play().catch(e => console.log("Áudio bloqueado pelo navegador até o primeiro clique."));
+
+    if (!elCliente) return;
+
+    // Efeito Visual de Ouro e Piscar
+    elCliente.innerText = `AGORA: ${nome.toUpperCase()}`;
+    elCliente.style.color = "#fbbf24"; // Cor Dourada
+    elCliente.style.textShadow = "0 0 20px #fbbf24";
+    elCliente.style.animation = "piscar 1s infinite";
+    
+    // Remove o efeito após 10 segundos
+    setTimeout(() => {
+        elCliente.style.animation = "none";
+        elCliente.style.color = "#fff";
+        elCliente.style.textShadow = "none";
+    }, 10000);
+}
+
+// ==========================================
+// 19. FILA INTELIGENTE (CHAMADA NA TV)
+// ==========================================
+function chamarCliente(idAtendimento, nomeCliente) {
+    console.log("Chamando cliente:", nomeCliente, "ID:", idAtendimento);
+
+    db.ref('painel_tv').set({
+        idAtendimento: idAtendimento,
+        nome: nomeCliente,
+        timestamp: Date.now()
+    }).then(() => {
+        dispararToast(`Chamando ${nomeCliente} na TV!`);
+    }).catch(erro => {
+        console.error("Erro ao chamar cliente:", erro);
+        dispararToast("Erro ao acionar a TV", "error");
+    });
+}
 
