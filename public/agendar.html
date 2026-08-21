@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agendamento Online - Cássia Nunes</title>
-    <!-- Certifique-se de que o caminho do CSS aponta para o seu style.css -->
-    <link rel="stylesheet" href="style.css">
+    <!-- CORRIGIDO: o CSS do projeto fica dentro da pasta /css, não na raiz -->
+    <link rel="stylesheet" href="css/style.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
@@ -73,9 +73,11 @@
         </div>
     </div>
 
-    <!-- Firebase SDKs Compat -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <!-- CORRIGIDO: usando a MESMA versão do Firebase SDK (8.10.1, sintaxe clássica)
+         que o resto do sistema (index.html) já usa. Evita conflitos de inicialização
+         e comportamento inconsistente entre v8 e v9-compat. -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
     <script>
         // Configuração do Firebase
@@ -161,6 +163,7 @@
                 telefoneCliente: tel,
                 profissionalId: profId || null,
                 nomeProfissional: profNome,
+                status: "Confirmado",
                 servicos: [{ id: Date.now(), nome: servicoNome, preco: precoServico, tipo: 'servico' }],
                 total: precoServico,
                 pagamento: "Pendente",

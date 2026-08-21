@@ -1608,56 +1608,101 @@
         });
     }
 
-    // Atualiza os cartões de cima (Faturamento, Agendamentos, Retornos e Pontos)
-function atualizarKPIs() {
-    try {
-        const hojeIso = new Date().toISOString().split('T')[0];
-        const profFiltro = document.getElementById('dash-filtro-profissional')?.value;
+    function atualizarKPIs() {
+        try {
+            const hojeIso = new Date().toISOString().split('T')[0];
+            const mesAtualIso = hojeIso.slice(0, 7); // "2026-08"
+            const profFiltro = document.getElementById('dash-filtro-profissional')?.value;
+            
+            // 1. Tenta pegar os inputs de data do Dashboard de forma segura
+            const inputInicio = document.getElementById('dash-data-inicio') || document.querySelectorAll('input[type="date"]')[0];
+            const inputFim = document.getElementById('dash-data-fim') || document.querySelectorAll('input[type="date"]')[1];
+            
+            const dataInicio = inputInicio?.value || mesAtualIso + '-01';
+            const dataFim = inputFim?.value || hojeIso;
 
-        let faturamentoHoje = 0;
-        let agendamentosHoje = 0;
-        let retornosPendentes = 0;
-        let pontosDistribuidos = 0;
+            let faturamentoPeriodo = 0;
+            let faturamentoMesFin = 0;
+            let saidasMesFin = 0;
+            let agendamentosHoje = 0;
+            let retornosPendentes = 0;
+            let pontosDistribuidos = 0;
 
-        // 1. Calcula Atendimentos
-        const atendimentos = store.atendimentos || [];
-        atendimentos.forEach(a => {
-            if (a.data === hojeIso) {
-                if (profFiltro && a.profissionalId !== profFiltro) return; 
-                faturamentoHoje += (Number(a.total) || 0);
-                agendamentosHoje++;
+            // 2. Processa os Atendimentos
+            const atendimentos = store.atendimentos || [];
+            atendimentos.forEach(a => {
+                if (!a.data) return;
+
+                // Faturamento do Dashboard (respeita o filtro de período da tela)
+                if (a.data >= dataInicio && a.data <= dataFim) {
+                    if (!profFiltro || a.profissionalId === profFiltro) {
+                        faturamentoPeriodo += (Number(a.total) || 0);
+                    }
+                }
+
+                // Faturamento do Mês (para a aba Financeiro)
+                if (a.data.startsWith(mesAtualIso)) {
+                    faturamentoMesFin += (Number(a.total) || 0);
+                }
+
+                // Agendamentos de hoje
+                if (a.data === hojeIso) {
+                    if (!profFiltro || a.profissionalId === profFiltro) {
+                        agendamentosHoje++;
+                    }
+                }
+            });
+
+            // 3. Processa as Despesas (Saídas do Mês para o Financeiro)
+            const despesas = store.despesas || [];
+            despesas.forEach(d => {
+                if (d.data && d.data.startsWith(mesAtualIso)) {
+                    saidasMesFin += (Number(d.valor) || 0);
+                }
+            });
+
+            // 4. Processa Clientes (Retornos e Pontos)
+            const clientes = store.clientes || [];
+            const listaClientes = Array.isArray(clientes) ? clientes : Object.values(clientes);
+            
+            listaClientes.forEach(c => {
+                if (c.previsaoRetorno && c.previsaoRetorno <= hojeIso) {
+                    retornosPendentes++;
+                }
+                if (c.pontos) {
+                    pontosDistribuidos += (Number(c.pontos) || 0);
+                }
+            });
+
+            // 5. Atualiza os elementos do Dashboard
+            const elFaturamento = document.getElementById('dash-faturamento');
+            const elAtendimentos = document.getElementById('dash-atendimentos');
+            const elRetornos = document.getElementById('dash-retornos');
+            const elPontos = document.getElementById('dash-pontos');
+            
+            if (elFaturamento) elFaturamento.innerText = `R$ ${faturamentoPeriodo.toFixed(2)}`;
+            if (elAtendimentos) elAtendimentos.innerText = agendamentosHoje;
+            if (elRetornos) elRetornos.innerText = retornosPendentes;
+            if (elPontos) elPontos.innerText = pontosDistribuidos;
+
+            // 6. Atualiza os cards da aba Financeiro (se existirem na tela)
+            const elEntradasFin = document.getElementById('fin-entradas-mes') || document.querySelector('.fin-card.income h2') || document.querySelectorAll('div.glass-panel h2')[0];
+            const elSaidasFin = document.getElementById('fin-saidas-mes') || document.querySelector('.fin-card.expense h2');
+            const elLucroFin = document.getElementById('fin-lucro-mes') || document.querySelector('.fin-card.profit h2');
+
+            if (document.querySelector('.fin-card, #fin-entradas-mes') || window.location.href.includes('financeiro')) {
+                if (elEntradasFin) elEntradasFin.innerText = `R$ ${faturamentoMesFin.toFixed(2)}`;
+                if (elSaidasFin) elSaidasFin.innerText = `R$ ${saidasMesFin.toFixed(2)}`;
+                if (elLucroFin) {
+                    const lucro = faturamentoMesFin - saidasMesFin;
+                    elLucroFin.innerText = `R$ ${lucro.toFixed(2)}`;
+                }
             }
-        });
 
-        // 2. Calcula Clientes (Corrigido para "previsaoRetorno")
-        const clientes = store.clientes || [];
-        const listaClientes = Array.isArray(clientes) ? clientes : Object.values(clientes);
-        
-        listaClientes.forEach(c => {
-            // Agora vai ler a data certa e sair do ZERO!
-            if (c.previsaoRetorno && c.previsaoRetorno <= hojeIso) {
-                retornosPendentes++;
-            }
-            if (c.pontos) {
-                pontosDistribuidos += (Number(c.pontos) || 0);
-            }
-        });
-
-        const elFaturamento = document.getElementById('dash-faturamento');
-        const elAtendimentos = document.getElementById('dash-atendimentos');
-        const elRetornos = document.getElementById('dash-retornos');
-        const elPontos = document.getElementById('dash-pontos');
-        
-        // 3. Atualiza usando apenas innerText (preserva a beleza da sua fonte h3)
-        if (elFaturamento) elFaturamento.innerText = `R$ ${faturamentoHoje.toFixed(2)}`;
-        if (elAtendimentos) elAtendimentos.innerText = agendamentosHoje;
-        if (elRetornos) elRetornos.innerText = retornosPendentes;
-        if (elPontos) elPontos.innerText = pontosDistribuidos;
-
-    } catch (erro) {
-        console.error("Erro no Dashboard:", erro);
+        } catch (erro) {
+            console.error("Erro no Dashboard/Financeiro:", erro);
+        }
     }
-}
 
     function renderTabelaFinanceiro() {
         const tbody = document.getElementById("tabela-financeiro");
