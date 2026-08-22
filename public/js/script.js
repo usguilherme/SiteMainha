@@ -852,6 +852,13 @@
         } else {
             // --- MODO NOVA VENDA ---
             db.ref(`atendimentos/${id}`).set(atendimento);
+
+            // NOVO: registra o horário como ocupado no node público "disponibilidade"
+            // (usado pela página pública de agendamento pra evitar choque de horário)
+            if(idProfissional) {
+                db.ref(`disponibilidade/${atendimento.data}/${idProfissional}/${atendimento.hora.replace(':','-')}`).set(true)
+                    .catch(err => console.error("Erro ao registrar disponibilidade:", err));
+            }
             
             // --- NOVO: CONFIRMAÇÃO DE IMPRESSÃO ---
             if(confirm("✅ Venda Finalizada com sucesso!\n\nDeseja imprimir o Cupom?")) {
@@ -976,6 +983,16 @@
         }
     }
 
+    // NOVO: exclui o atendimento e limpa o registro de horário ocupado (disponibilidade)
+    function excluirAtendimentoEDisponibilidade(id, data, profissionalId, hora) {
+        if(!confirm('Excluir este atendimento?')) return;
+        db.ref(`atendimentos/${id}`).remove();
+        if(profissionalId && data && hora) {
+            db.ref(`disponibilidade/${data}/${profissionalId}/${hora.replace(':','-')}`).remove()
+                .catch(err => console.error("Erro ao limpar disponibilidade:", err));
+        }
+    }
+
     function renderAgenda() {
         const div = document.getElementById("lista-agenda");
         const inputDate = document.getElementById("agenda-date-input");
@@ -1014,7 +1031,7 @@
                     ${a.clienteId ? `<button class="btn-small bg-purple" onclick="abrirHistoricoRapido('${a.clienteId}')" title="Ver Histórico Rápido"><i data-lucide="eye" style="width:14px"></i></button>` : ''}
                     <button class="btn-small bg-green" onclick="chamarCliente('${a.id}', '${a.nomeCliente}')" title="Chamar na TV"><i data-lucide="megaphone" style="width:14px"></i></button>
                     <button class="btn-small bg-yellow" onclick="editarAtendimento(${a.id})" title="Editar Venda"><i data-lucide="pencil" style="width:14px"></i></button>
-                    <button class="btn-small bg-purple" onclick="if(confirm('Excluir este atendimento?')) db.ref('atendimentos/${a.id}').remove()" title="Excluir"><i data-lucide="trash-2" style="width:14px"></i></button>
+                    <button class="btn-small bg-purple" onclick="excluirAtendimentoEDisponibilidade(${a.id}, '${a.data}', '${a.profissionalId || ''}', '${a.hora}')" title="Excluir"><i data-lucide="trash-2" style="width:14px"></i></button>
                 </div>
             </div>
         `).join("");

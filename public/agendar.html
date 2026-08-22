@@ -69,6 +69,11 @@
                 </div>
             </div>
 
+            <div id="pub-horarios-ocupados" style="display:none; font-size:12px; color:var(--text-muted); background:rgba(255,255,255,0.03); border-radius:8px; padding:10px 12px; line-height:1.6;"></div>
+            <div id="pub-aviso-conflito" style="display:none; font-size:13px; color:#f87171; background:#f4717120; border:1px solid #f8717150; border-radius:8px; padding:10px 12px;">
+                ⚠️ Esse horário já está ocupado. Escolha outro, por favor.
+            </div>
+
             <button onclick="salvarAgendamentoPublico()" class="btn-glow" style="margin-top: 10px; width: 100%;">CONFIRMAR AGENDAMENTO</button>
         </div>
     </div>
@@ -132,6 +137,64 @@
             console.error("Erro ao carregar profissionais:", err);
         });
 
+        // ===== NOVO: HORÁRIOS OCUPADOS =====
+        // Consulta o node público "disponibilidade" (sem dados sensíveis de clientes)
+        // sempre que a profissional ou a data mudarem, e mostra os horários já ocupados.
+        let horariosOcupadosCache = [];
+
+        function chaveHora(hora) {
+            return hora.replace(':', '-');
+        }
+
+        function carregarHorariosOcupados() {
+            const data = document.getElementById("pub-data").value;
+            const profId = document.getElementById("pub-profissional").value;
+            const divAviso = document.getElementById("pub-horarios-ocupados");
+            horariosOcupadosCache = [];
+
+            if(!data) {
+                divAviso.style.display = "none";
+                return;
+            }
+
+            if(!profId) {
+                // Sem profissional específica escolhida, não dá pra checar conflito com precisão
+                divAviso.style.display = "block";
+                divAviso.innerHTML = "ℹ️ Escolha uma profissional específica para vermos os horários já ocupados.";
+                return;
+            }
+
+            db.ref(`disponibilidade/${data}/${profId}`).once('value').then(snap => {
+                const ocupados = snap.val() ? Object.keys(snap.val()) : [];
+                horariosOcupadosCache = ocupados.map(h => h.replace('-', ':'));
+
+                if(horariosOcupadosCache.length === 0) {
+                    divAviso.style.display = "block";
+                    divAviso.innerHTML = "✅ Nenhum horário ocupado nesse dia com essa profissional ainda.";
+                } else {
+                    divAviso.style.display = "block";
+                    divAviso.innerHTML = "🕐 Horários já ocupados nesse dia: <strong>" + horariosOcupadosCache.sort().join(", ") + "</strong>";
+                }
+                verificarConflitoHorario();
+            }).catch(err => {
+                console.error("Erro ao checar horários ocupados:", err);
+                divAviso.style.display = "none";
+            });
+        }
+
+        function verificarConflitoHorario() {
+            const hora = document.getElementById("pub-hora").value;
+            const avisoConflito = document.getElementById("pub-aviso-conflito");
+            const temConflito = hora && horariosOcupadosCache.includes(hora);
+            avisoConflito.style.display = temConflito ? "block" : "none";
+            return temConflito;
+        }
+
+        document.getElementById("pub-data").addEventListener("change", carregarHorariosOcupados);
+        document.getElementById("pub-profissional").addEventListener("change", carregarHorariosOcupados);
+        document.getElementById("pub-hora").addEventListener("change", verificarConflitoHorario);
+        // ===== FIM NOVO =====
+
         // 3. Salva o Agendamento direto na Agenda do Salão
         function salvarAgendamentoPublico() {
             const nome = document.getElementById("pub-nome").value.trim();
@@ -150,6 +213,12 @@
 
             if(!nome || !tel || !servicoNome || !data || !hora) {
                 alert("Por favor, preencha todos os campos obrigatórios!");
+                return;
+            }
+
+            // NOVO: bloqueia se o horário já estiver ocupado (com profissional específica)
+            if(profId && verificarConflitoHorario()) {
+                alert("⚠️ Esse horário já está ocupado com essa profissional. Por favor, escolha outro horário.");
                 return;
             }
 
@@ -172,6 +241,11 @@
 
             db.ref(`atendimentos/${id}`).set(novoAtendimento)
                 .then(() => {
+                    // NOVO: registra o horário como ocupado no node público "disponibilidade"
+                    if(profId) {
+                        db.ref(`disponibilidade/${data}/${profId}/${chaveHora(hora)}`).set(true)
+                            .catch(err => console.error("Erro ao registrar disponibilidade:", err));
+                    }
                     alert("🎉 Agendamento realizado com sucesso! Aguardamos sua visita.");
                     location.reload();
                 })
