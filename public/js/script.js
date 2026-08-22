@@ -1612,12 +1612,17 @@
         try {
             const hojeIso = new Date().toISOString().split('T')[0];
             const mesAtualIso = hojeIso.slice(0, 7); // "2026-08"
-            const profFiltro = document.getElementById('dash-filtro-profissional')?.value;
-            
-            // 1. Tenta pegar os inputs de data do Dashboard de forma segura
-            const inputInicio = document.getElementById('dash-data-inicio') || document.querySelectorAll('input[type="date"]')[0];
-            const inputFim = document.getElementById('dash-data-fim') || document.querySelectorAll('input[type="date"]')[1];
-            
+
+            // CORRIGIDO: cada filtro lê SÓ o seu próprio select, sem "adivinhar"
+            // com querySelector('select') (que pegava o primeiro select da página
+            // inteira, geralmente o do Dashboard, mesmo estando no Financeiro).
+            const profFiltroDash = document.getElementById('dash-filtro-profissional')?.value || "";
+            const profFiltroFin = document.getElementById('financeiro-filtro-profissional')?.value || "";
+
+            // Inputs de período do gráfico/dashboard
+            const inputInicio = document.getElementById('dash-grafico-inicio');
+            const inputFim = document.getElementById('dash-grafico-fim');
+
             const dataInicio = inputInicio?.value || mesAtualIso + '-01';
             const dataFim = inputFim?.value || hojeIso;
 
@@ -1633,38 +1638,44 @@
             atendimentos.forEach(a => {
                 if (!a.data) return;
 
-                // Faturamento do Dashboard (respeita o filtro de período da tela)
+                // Faturamento do Dashboard (respeita o filtro de período + profissional DO DASHBOARD)
                 if (a.data >= dataInicio && a.data <= dataFim) {
-                    if (!profFiltro || a.profissionalId === profFiltro) {
+                    if (!profFiltroDash || a.profissionalId == profFiltroDash) {
                         faturamentoPeriodo += (Number(a.total) || 0);
                     }
                 }
 
-                // Faturamento do Mês (para a aba Financeiro)
+                // Faturamento do Mês (para a aba Financeiro) - respeita o filtro DO FINANCEIRO
                 if (a.data.startsWith(mesAtualIso)) {
-                    faturamentoMesFin += (Number(a.total) || 0);
+                    if (!profFiltroFin || a.profissionalId == profFiltroFin) {
+                        faturamentoMesFin += (Number(a.total) || 0);
+                    }
                 }
 
-                // Agendamentos de hoje
+                // Agendamentos de hoje (Dashboard) - respeita o filtro DO DASHBOARD
                 if (a.data === hojeIso) {
-                    if (!profFiltro || a.profissionalId === profFiltro) {
+                    if (!profFiltroDash || a.profissionalId == profFiltroDash) {
                         agendamentosHoje++;
                     }
                 }
             });
 
             // 3. Processa as Despesas (Saídas do Mês para o Financeiro)
+            // Despesas gerais (sem profissionalId) sempre entram; despesas específicas
+            // de uma profissional só entram se o filtro bater com ela.
             const despesas = store.despesas || [];
             despesas.forEach(d => {
                 if (d.data && d.data.startsWith(mesAtualIso)) {
-                    saidasMesFin += (Number(d.valor) || 0);
+                    if (!profFiltroFin || !d.profissionalId || d.profissionalId == profFiltroFin) {
+                        saidasMesFin += (Number(d.valor) || 0);
+                    }
                 }
             });
 
             // 4. Processa Clientes (Retornos e Pontos)
             const clientes = store.clientes || [];
             const listaClientes = Array.isArray(clientes) ? clientes : Object.values(clientes);
-            
+
             listaClientes.forEach(c => {
                 if (c.previsaoRetorno && c.previsaoRetorno <= hojeIso) {
                     retornosPendentes++;
@@ -1679,24 +1690,22 @@
             const elAtendimentos = document.getElementById('dash-atendimentos');
             const elRetornos = document.getElementById('dash-retornos');
             const elPontos = document.getElementById('dash-pontos');
-            
+
             if (elFaturamento) elFaturamento.innerText = `R$ ${faturamentoPeriodo.toFixed(2)}`;
             if (elAtendimentos) elAtendimentos.innerText = agendamentosHoje;
             if (elRetornos) elRetornos.innerText = retornosPendentes;
             if (elPontos) elPontos.innerText = pontosDistribuidos;
 
-            // 6. Atualiza os cards da aba Financeiro (se existirem na tela)
-            const elEntradasFin = document.getElementById('fin-entradas-mes') || document.querySelector('.fin-card.income h2') || document.querySelectorAll('div.glass-panel h2')[0];
-            const elSaidasFin = document.getElementById('fin-saidas-mes') || document.querySelector('.fin-card.expense h2');
-            const elLucroFin = document.getElementById('fin-lucro-mes') || document.querySelector('.fin-card.profit h2');
+            // 6. Atualiza os cards da aba Financeiro (busca pelo ID correto, sem "adivinhação")
+            const elEntradasFin = document.getElementById('fin-entradas') || document.getElementById('fin-entradas-mes');
+            const elSaidasFin = document.getElementById('fin-saidas') || document.getElementById('fin-saidas-mes');
+            const elLucroFin = document.getElementById('fin-lucro') || document.getElementById('fin-lucro-mes');
 
-            if (document.querySelector('.fin-card, #fin-entradas-mes') || window.location.href.includes('financeiro')) {
-                if (elEntradasFin) elEntradasFin.innerText = `R$ ${faturamentoMesFin.toFixed(2)}`;
-                if (elSaidasFin) elSaidasFin.innerText = `R$ ${saidasMesFin.toFixed(2)}`;
-                if (elLucroFin) {
-                    const lucro = faturamentoMesFin - saidasMesFin;
-                    elLucroFin.innerText = `R$ ${lucro.toFixed(2)}`;
-                }
+            if (elEntradasFin) elEntradasFin.innerText = `R$ ${faturamentoMesFin.toFixed(2)}`;
+            if (elSaidasFin) elSaidasFin.innerText = `R$ ${saidasMesFin.toFixed(2)}`;
+            if (elLucroFin) {
+                const lucro = faturamentoMesFin - saidasMesFin;
+                elLucroFin.innerText = `R$ ${lucro.toFixed(2)}`;
             }
 
         } catch (erro) {
