@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cássia Nunes | Salão de Beleza</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            height: auto !important;
+            overflow-y: auto !important;
+            min-height: 100vh;
+        }
+
+        .vt-hero {
+            position: relative;
+            text-align: center;
+            padding: 70px 20px 50px;
+            background-image: radial-gradient(circle at 50% 0%, #3b0764 0%, transparent 60%);
+            background-size: cover;
+            background-position: center;
+        }
+        .vt-hero.tem-capa {
+            padding-top: 220px;
+        }
+        .vt-hero-capa {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 220px;
+            object-fit: cover;
+            mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+            opacity: 0.85;
+        }
+        .vt-hero-conteudo { position: relative; z-index: 2; }
+        .vt-hero h1 {
+            font-family: var(--font-display);
+            font-size: 32px;
+            font-weight: 800;
+        }
+        .vt-hero p {
+            color: var(--text-muted);
+            font-size: 15px;
+            margin-top: 8px;
+            max-width: 440px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .vt-cta {
+            display: inline-block;
+            margin-top: 22px;
+            text-decoration: none;
+        }
+
+        .vt-section {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        .vt-section-titulo {
+            font-family: var(--font-display);
+            font-size: 20px;
+            margin-bottom: 18px;
+            text-align: center;
+        }
+
+        /* ===== ESTILO "CARDÁPIO" ===== */
+        .vt-menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+        }
+        .vt-item {
+            display: flex;
+            gap: 14px;
+            padding: 14px;
+            align-items: center;
+        }
+        .vt-item.destaque {
+            border: 1px solid var(--primary);
+            box-shadow: 0 0 25px var(--primary-dim);
+        }
+        .vt-item-foto {
+            width: 70px;
+            height: 70px;
+            border-radius: 12px;
+            object-fit: cover;
+            flex-shrink: 0;
+            background: rgba(255,255,255,0.05);
+        }
+        .vt-item-foto-placeholder {
+            width: 70px;
+            height: 70px;
+            border-radius: 12px;
+            flex-shrink: 0;
+            background: var(--primary-dim);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+        }
+        .vt-item-info { flex: 1; min-width: 0; }
+        .vt-item-nome-linha {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 10px;
+        }
+        .vt-item-nome {
+            font-weight: 700;
+            font-size: 15px;
+        }
+        .vt-item-preco {
+            color: var(--primary);
+            font-weight: 700;
+            white-space: nowrap;
+            font-size: 15px;
+        }
+        .vt-item-desc {
+            color: var(--text-muted);
+            font-size: 12.5px;
+            margin-top: 3px;
+            line-height: 1.4;
+        }
+        .vt-badge-destaque {
+            display: inline-block;
+            font-size: 10px;
+            background: var(--primary-dim);
+            color: var(--primary);
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-bottom: 4px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .vt-contato {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            align-items: center;
+            text-align: center;
+        }
+        .vt-contato a {
+            color: var(--text-main);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        .vt-contato a:hover { color: var(--primary); }
+
+        .vt-footer {
+            text-align: center;
+            padding: 30px 20px 90px;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .vt-fixed-cta {
+            position: fixed;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 32px);
+            max-width: 420px;
+            z-index: 50;
+        }
+        @media (min-width: 640px) {
+            .vt-fixed-cta { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="vt-hero fade-in" id="vt-hero">
+        <div class="vt-hero-conteudo">
+            <h2 class="text-gradient" style="font-family: var(--font-display); font-size: 14px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px;" id="vt-selo">Cássia Nunes</h2>
+            <h1 id="vt-titulo">Beleza, cuidado <br> e autoestima em um só lugar</h1>
+            <p id="vt-subtitulo">Confira nossos serviços e agende seu horário em poucos segundos.</p>
+            <a href="agendar.html" class="btn-glow vt-cta">📅 AGENDAR MEU HORÁRIO</a>
+        </div>
+    </div>
+
+    <div class="vt-section">
+        <h2 class="vt-section-titulo">⭐ Destaques</h2>
+        <div id="vt-lista-destaques" class="vt-menu-grid"></div>
+    </div>
+
+    <div class="vt-section">
+        <h2 class="vt-section-titulo">💅 Cardápio de Serviços</h2>
+        <div id="vt-lista-servicos" class="vt-menu-grid">
+            <div class="glass-panel vt-item"><span style="color:var(--text-muted); font-weight:400;">Carregando serviços...</span></div>
+        </div>
+    </div>
+
+    <div class="vt-section">
+        <div class="glass-panel vt-contato">
+            <h2 style="margin-bottom:0;">📍 Onde estamos</h2>
+            <a id="vt-endereco-link" href="#" target="_blank">
+                <span id="vt-endereco-texto">Endereço não configurado ainda</span>
+            </a>
+            <a id="vt-whatsapp-link" href="#" target="_blank">
+                <span>📱 Falar no WhatsApp</span>
+            </a>
+            <a id="vt-instagram-link" href="#" target="_blank" style="display:none;">
+                <span>📷 Nosso Instagram</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="vt-footer">
+        Cássia Nunes Hair &copy; <span id="vt-ano"></span>
+    </div>
+
+    <a href="agendar.html" class="btn-glow vt-fixed-cta" style="text-align:center; display:block;">📅 Agendar Agora</a>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        document.getElementById("vt-ano").innerText = new Date().getFullYear();
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCpNsnwOVDLSZfXn-g6SE1V69BXHs8cYEc",
+            authDomain: "mainhasite.firebaseapp.com",
+            databaseURL: "https://mainhasite-default-rtdb.firebaseio.com",
+            projectId: "mainhasite",
+            storageBucket: "mainhasite.firebasestorage.app",
+            messagingSenderId: "11190400668",
+            appId: "1:11190400668:web:b59e8c134fbaee3e121f59"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // ===== Carrega a configuração da vitrine (título, contato, capa) =====
+        db.ref('landingConfig').once('value').then(snap => {
+            const cfg = snap.val() || {};
+
+            if(cfg.titulo) {
+                document.getElementById("vt-titulo").innerHTML = cfg.titulo;
+                document.title = cfg.titulo + " | Salão de Beleza";
+            }
+            if(cfg.subtitulo) document.getElementById("vt-subtitulo").innerText = cfg.subtitulo;
+
+            if(cfg.capa) {
+                const hero = document.getElementById("vt-hero");
+                hero.classList.add("tem-capa");
+                const img = document.createElement("img");
+                img.src = cfg.capa;
+                img.className = "vt-hero-capa";
+                hero.prepend(img);
+            }
+
+            const whatsapp = cfg.whatsapp || "";
+            const linkWhats = document.getElementById("vt-whatsapp-link");
+            if(whatsapp) {
+                linkWhats.href = `https://wa.me/55${whatsapp}?text=${encodeURIComponent("Olá! Vim pelo site e gostaria de agendar um horário 💅")}`;
+            } else {
+                linkWhats.style.display = "none";
+            }
+
+            if(cfg.endereco) document.getElementById("vt-endereco-texto").innerText = cfg.endereco;
+            document.getElementById("vt-endereco-link").href = cfg.googleMapsUrl || "#";
+
+            if(cfg.instagram) {
+                const linkInsta = document.getElementById("vt-instagram-link");
+                linkInsta.href = cfg.instagram;
+                linkInsta.style.display = "flex";
+            }
+        }).catch(err => console.error("Erro ao carregar configuração da vitrine:", err));
+
+        // ===== Carrega os serviços (cardápio) =====
+        db.ref('servicos').on('value', snap => {
+            const servicosObj = snap.val() ? snap.val() : {};
+            let servicos = Object.values(servicosObj);
+
+            const divTodos = document.getElementById("vt-lista-servicos");
+            const divDestaques = document.getElementById("vt-lista-destaques");
+            const secDestaques = divDestaques.closest('.vt-section');
+
+            if(servicos.length === 0) {
+                divTodos.innerHTML = `<div class="glass-panel vt-item"><span style="color:var(--text-muted); font-weight:400;">Em breve, novidades!</span></div>`;
+                secDestaques.style.display = "none";
+                return;
+            }
+
+            servicos.sort((a, b) => a.nome.localeCompare(b.nome));
+
+            const renderItem = (s) => `
+                <div class="glass-panel vt-item ${s.destaque ? 'destaque' : ''}">
+                    ${s.foto
+                        ? `<img src="${s.foto}" class="vt-item-foto" alt="${s.nome}">`
+                        : `<div class="vt-item-foto-placeholder">💅</div>`
+                    }
+                    <div class="vt-item-info">
+                        ${s.destaque ? '<span class="vt-badge-destaque">⭐ DESTAQUE</span><br>' : ''}
+                        <div class="vt-item-nome-linha">
+                            <span class="vt-item-nome">${s.nome}</span>
+                            <span class="vt-item-preco">R$ ${parseFloat(s.preco).toFixed(2)}</span>
+                        </div>
+                        ${s.descricao ? `<div class="vt-item-desc">${s.descricao}</div>` : ''}
+                    </div>
+                </div>`;
+
+            const destaques = servicos.filter(s => s.destaque);
+            if(destaques.length === 0) {
+                secDestaques.style.display = "none";
+            } else {
+                secDestaques.style.display = "block";
+                divDestaques.innerHTML = destaques.map(renderItem).join('');
+            }
+
+            divTodos.innerHTML = servicos.map(renderItem).join('');
+        });
+    </script>
+</body>
+</html>

@@ -7,6 +7,7 @@
         cidadePix: "",
         metaMensal: 0
     };
+    let landingConfig = {};
 
     const firebaseConfig = {
     apiKey: "AIzaSyCpNsnwOVDLSZfXn-g6SE1V69BXHs8cYEc",
@@ -364,6 +365,12 @@
                 configSistema = snap.val();
             }
         });
+
+        // NOVO: CARREGAR CONFIGURAÇÃO DA VITRINE (LANDING PAGE PÚBLICA)
+        db.ref('landingConfig').on('value', snap => {
+            landingConfig = snap.val() || {};
+            preencherFormularioLanding();
+        });
         
         db.ref('servicos').on('value', snap => {
             store.servicos = snap.val() ? Object.values(snap.val()) : [];
@@ -451,6 +458,49 @@
     }
 
     // ==========================================
+    // VITRINE / LANDING PAGE PÚBLICA
+    // ==========================================
+    function preencherFormularioLanding() {
+        const t = document.getElementById("land-titulo");
+        if(!t) return; // página ainda não carregada no DOM
+        document.getElementById("land-titulo").value = landingConfig.titulo || "";
+        document.getElementById("land-subtitulo").value = landingConfig.subtitulo || "";
+        document.getElementById("land-whatsapp").value = landingConfig.whatsapp || "";
+        document.getElementById("land-instagram").value = landingConfig.instagram || "";
+        document.getElementById("land-endereco").value = landingConfig.endereco || "";
+        document.getElementById("land-maps").value = landingConfig.googleMapsUrl || "";
+        const preview = document.getElementById("land-capa-preview");
+        if(preview) preview.innerHTML = landingConfig.capa ? `<img src="${landingConfig.capa}" style="width:120px; height:80px; object-fit:cover; border-radius:8px;">` : "";
+    }
+
+    function salvarLandingConfig() {
+        const dados = {
+            titulo: document.getElementById("land-titulo").value.trim(),
+            subtitulo: document.getElementById("land-subtitulo").value.trim(),
+            whatsapp: document.getElementById("land-whatsapp").value.replace(/\D/g, ''),
+            instagram: document.getElementById("land-instagram").value.trim(),
+            endereco: document.getElementById("land-endereco").value.trim(),
+            googleMapsUrl: document.getElementById("land-maps").value.trim()
+        };
+
+        const capaInput = document.getElementById("land-capa");
+        const salvar = (capaBase64) => {
+            if(capaBase64) dados.capa = capaBase64;
+            else if(landingConfig.capa) dados.capa = landingConfig.capa; // mantém a capa atual se não trocou
+
+            db.ref('landingConfig').set(dados)
+                .then(() => dispararToast("🌐 Vitrine atualizada com sucesso!"))
+                .catch(erro => dispararToast("Erro ao salvar: " + erro.message, "error"));
+        };
+
+        if(capaInput && capaInput.files[0]) {
+            processarImagem(capaInput.files[0], salvar);
+        } else {
+            salvar(null);
+        }
+    }
+
+    // ==========================================
     // 6. NAVEGAÇÃO E UI
     // ==========================================
     function abrirAba(idAba) {
@@ -496,6 +546,11 @@
                 // Se não, usa hoje como fallback
                 dataPDV.value = new Date().toISOString().split('T')[0];
             }
+        }
+
+        // NOVO: preenche o formulário da vitrine ao abrir essa aba
+        if (idAba === 'landing') {
+            setTimeout(preencherFormularioLanding, 250);
         }
     }
 
@@ -1479,22 +1534,50 @@
     function salvarServicoCad() {
         const nome = document.getElementById("serv-nome").value;
         const preco = document.getElementById("serv-preco").value;
+        const descricao = document.getElementById("serv-descricao") ? document.getElementById("serv-descricao").value.trim() : "";
+        const destaque = document.getElementById("serv-destaque") ? document.getElementById("serv-destaque").checked : false;
+        const fotoInput = document.getElementById("serv-foto");
+
         if(!nome || !preco) return dispararToast("Preencha nome e preço!", "error");
-        if (idServicoEdicao) {
-            db.ref(`servicos/${idServicoEdicao}`).update({ nome: nome, preco: preco }).then(() => dispararToast("Serviço atualizado!"));
-            cancelarEdicaoServico();
+
+        const salvar = (fotoBase64) => {
+            const dados = { nome, preco, descricao, destaque };
+            if(fotoBase64) dados.foto = fotoBase64;
+
+            if (idServicoEdicao) {
+                db.ref(`servicos/${idServicoEdicao}`).update(dados).then(() => dispararToast("Serviço atualizado!"));
+                cancelarEdicaoServico();
+            } else {
+                const id = Date.now();
+                db.ref(`servicos/${id}`).set({ id, ...dados });
+                dispararToast("Serviço salvo!");
+                cancelarEdicaoServico();
+            }
+        };
+
+        if(fotoInput && fotoInput.files[0]) {
+            processarImagem(fotoInput.files[0], salvar);
         } else {
-            const id = Date.now();
-            db.ref(`servicos/${id}`).set({ id, nome, preco });
-            dispararToast("Serviço salvo!");
-            document.getElementById("serv-nome").value = "";
-            document.getElementById("serv-preco").value = "";
+            salvar(null);
         }
     }
 
     function renderListaServicosCad() {
         const div = document.getElementById("lista-servicos-cad");
-        div.innerHTML = store.servicos.map(s => `<div class="glass-panel" style="padding:15px; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px"><div><strong>${s.nome}</strong><br><span class="text-gradient">R$ ${parseFloat(s.preco).toFixed(2)}</span></div><div style="display:flex; gap:10px"><button class="btn-small bg-yellow" onclick="prepararEdicaoServico(${s.id})" title="Editar"><i data-lucide="pencil" style="width:14px"></i></button><button class="btn-small bg-purple" onclick="if(confirm('Excluir?')) db.ref('servicos/${s.id}').remove()" title="Excluir"><i data-lucide="trash-2" style="width:14px"></i></button></div></div>`).join("");
+        div.innerHTML = store.servicos.map(s => `<div class="glass-panel" style="padding:15px; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:10px;">
+            <div style="display:flex; gap:12px; align-items:center; flex:1; min-width:0;">
+                ${s.foto ? `<img src="${s.foto}" style="width:50px; height:50px; object-fit:cover; border-radius:8px; flex-shrink:0;">` : ''}
+                <div style="min-width:0;">
+                    <strong>${s.nome}</strong> ${s.destaque ? '⭐' : ''}<br>
+                    <span class="text-gradient">R$ ${parseFloat(s.preco).toFixed(2)}</span>
+                    ${s.descricao ? `<br><small class="text-muted" style="display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px;">${s.descricao}</small>` : ''}
+                </div>
+            </div>
+            <div style="display:flex; gap:10px; flex-shrink:0;">
+                <button class="btn-small bg-yellow" onclick="prepararEdicaoServico(${s.id})" title="Editar"><i data-lucide="pencil" style="width:14px"></i></button>
+                <button class="btn-small bg-purple" onclick="if(confirm('Excluir?')) db.ref('servicos/${s.id}').remove()" title="Excluir"><i data-lucide="trash-2" style="width:14px"></i></button>
+            </div>
+        </div>`).join("");
         lucide.createIcons();
     }
 
@@ -1503,6 +1586,10 @@
         if(!s) return;
         document.getElementById("serv-nome").value = s.nome;
         document.getElementById("serv-preco").value = s.preco;
+        if(document.getElementById("serv-descricao")) document.getElementById("serv-descricao").value = s.descricao || "";
+        if(document.getElementById("serv-destaque")) document.getElementById("serv-destaque").checked = !!s.destaque;
+        const preview = document.getElementById("serv-foto-preview");
+        if(preview) preview.innerHTML = s.foto ? `<img src="${s.foto}" style="width:80px; height:80px; object-fit:cover; border-radius:8px;">` : "";
         idServicoEdicao = id;
         const btn = document.getElementById("btn-salvar-servico");
         if(btn) { btn.innerText = "ATUALIZAR"; btn.style.background = "var(--warning)"; }
@@ -1514,6 +1601,10 @@
         idServicoEdicao = null;
         document.getElementById("serv-nome").value = "";
         document.getElementById("serv-preco").value = "";
+        if(document.getElementById("serv-descricao")) document.getElementById("serv-descricao").value = "";
+        if(document.getElementById("serv-destaque")) document.getElementById("serv-destaque").checked = false;
+        if(document.getElementById("serv-foto")) document.getElementById("serv-foto").value = "";
+        if(document.getElementById("serv-foto-preview")) document.getElementById("serv-foto-preview").innerHTML = "";
         const btn = document.getElementById("btn-salvar-servico");
         if(btn) { btn.innerText = "Salvar"; btn.style.background = ""; }
         document.getElementById("btn-cancelar-servico").style.display = "none";

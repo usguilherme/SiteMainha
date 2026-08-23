@@ -1,0 +1,54 @@
+<div class="glass-panel form-inline">
+    <h3 style="margin-bottom: 15px;">🌐 Vitrine Online</h3>
+    <p class="text-muted" style="font-size:13px; margin-bottom:15px;">
+        Essas informações aparecem na página pública de vendas do salão (o "cardápio" de serviços que você compartilha nas redes sociais).
+    </p>
+
+    <label class="label-small">Título de destaque (ex: nome do salão)</label>
+    <input type="text" id="land-titulo" placeholder="Cássia Nunes" class="modern-input">
+
+    <label class="label-small mt-10">Frase de efeito (subtítulo)</label>
+    <input type="text" id="land-subtitulo" placeholder="Beleza, cuidado e autoestima em um só lugar" class="modern-input">
+
+    <div class="mobile-stack mt-10" style="display:flex; gap:10px; width:100%;">
+        <div style="flex:1;">
+            <label class="label-small">WhatsApp (com DDD, só números)</label>
+            <input type="text" id="land-whatsapp" placeholder="83999999999" class="modern-input">
+        </div>
+        <div style="flex:1;">
+            <label class="label-small">Instagram (link completo, opcional)</label>
+            <input type="text" id="land-instagram" placeholder="https://instagram.com/seu_perfil" class="modern-input">
+        </div>
+    </div>
+
+    <label class="label-small mt-10">Endereço</label>
+    <input type="text" id="land-endereco" placeholder="Rua Exemplo, 123 - Centro, Cidade/UF" class="modern-input">
+
+    <label class="label-small mt-10">Link do Google Maps (opcional)</label>
+    <input type="text" id="land-maps" placeholder="https://maps.google.com/?q=..." class="modern-input">
+
+    <div class="mt-15" style="display:flex; align-items:center; gap:10px;">
+        <div style="flex:1;">
+            <label class="label-small">Foto de capa da vitrine (opcional)</label>
+            <input type="file" id="land-capa" accept="image/*" class="modern-input">
+        </div>
+    </div>
+    <div id="land-capa-preview" style="margin-top:8px;"></div>
+
+    <button onclick="salvarLandingConfig()" class="btn-glow full-width mt-15">SALVAR VITRINE</button>
+
+    <div class="mt-15" style="text-align:center;">
+        <a href="vitrine.html" target="_blank" class="btn-small bg-purple" style="text-decoration:none; display:inline-block;">
+            👀 Ver página pública
+        </a>
+    </div>
+</div>
+
+<div class="glass-panel mt-15" style="margin-bottom: 80px;">
+    <h3 style="margin-bottom: 10px;">⭐ Serviços em destaque</h3>
+    <p class="text-muted" style="font-size:13px; margin-bottom:10px;">
+        Marque "Destacar no site" na edição de cada serviço (aba Serviços) para que ele apareça com mais evidência na vitrine.
+        Foto e descrição de cada serviço também são editadas por lá.
+    </p>
+    <button onclick="abrirAba('servicos')" class="btn-small bg-glass" style="width:100%;">Ir para Cadastro de Serviços</button>
+</div>

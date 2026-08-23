@@ -1,0 +1,372 @@
+diff --git a/public/agendar.html b/public/agendar.html
+index eff6a11..ce5cc8b 100644
+--- a/public/agendar.html
++++ b/public/agendar.html
+@@ -69,6 +69,11 @@
+                 </div>
+             </div>
+ 
++            <div id="pub-horarios-ocupados" style="display:none; font-size:12px; color:var(--text-muted); background:rgba(255,255,255,0.03); border-radius:8px; padding:10px 12px; line-height:1.6;"></div>
++            <div id="pub-aviso-conflito" style="display:none; font-size:13px; color:#f87171; background:#f4717120; border:1px solid #f8717150; border-radius:8px; padding:10px 12px;">
++                ⚠️ Esse horário já está ocupado. Escolha outro, por favor.
++            </div>
++
+             <button onclick="salvarAgendamentoPublico()" class="btn-glow" style="margin-top: 10px; width: 100%;">CONFIRMAR AGENDAMENTO</button>
+         </div>
+     </div>
+@@ -132,6 +137,64 @@
+             console.error("Erro ao carregar profissionais:", err);
+         });
+ 
++        // ===== NOVO: HORÁRIOS OCUPADOS =====
++        // Consulta o node público "disponibilidade" (sem dados sensíveis de clientes)
++        // sempre que a profissional ou a data mudarem, e mostra os horários já ocupados.
++        let horariosOcupadosCache = [];
++
++        function chaveHora(hora) {
++            return hora.replace(':', '-');
++        }
++
++        function carregarHorariosOcupados() {
++            const data = document.getElementById("pub-data").value;
++            const profId = document.getElementById("pub-profissional").value;
++            const divAviso = document.getElementById("pub-horarios-ocupados");
++            horariosOcupadosCache = [];
++
++            if(!data) {
++                divAviso.style.display = "none";
++                return;
++            }
++
++            if(!profId) {
++                // Sem profissional específica escolhida, não dá pra checar conflito com precisão
++                divAviso.style.display = "block";
++                divAviso.innerHTML = "ℹ️ Escolha uma profissional específica para vermos os horários já ocupados.";
++                return;
++            }
++
++            db.ref(`disponibilidade/${data}/${profId}`).once('value').then(snap => {
++                const ocupados = snap.val() ? Object.keys(snap.val()) : [];
++                horariosOcupadosCache = ocupados.map(h => h.replace('-', ':'));
++
++                if(horariosOcupadosCache.length === 0) {
++                    divAviso.style.display = "block";
++                    divAviso.innerHTML = "✅ Nenhum horário ocupado nesse dia com essa profissional ainda.";
++                } else {
++                    divAviso.style.display = "block";
++                    divAviso.innerHTML = "🕐 Horários já ocupados nesse dia: <strong>" + horariosOcupadosCache.sort().join(", ") + "</strong>";
++                }
++                verificarConflitoHorario();
++            }).catch(err => {
++                console.error("Erro ao checar horários ocupados:", err);
++                divAviso.style.display = "none";
++            });
++        }
++
++        function verificarConflitoHorario() {
++            const hora = document.getElementById("pub-hora").value;
++            const avisoConflito = document.getElementById("pub-aviso-conflito");
++            const temConflito = hora && horariosOcupadosCache.includes(hora);
++            avisoConflito.style.display = temConflito ? "block" : "none";
++            return temConflito;
++        }
++
++        document.getElementById("pub-data").addEventListener("change", carregarHorariosOcupados);
++        document.getElementById("pub-profissional").addEventListener("change", carregarHorariosOcupados);
++        document.getElementById("pub-hora").addEventListener("change", verificarConflitoHorario);
++        // ===== FIM NOVO =====
++
+         // 3. Salva o Agendamento direto na Agenda do Salão
+         function salvarAgendamentoPublico() {
+             const nome = document.getElementById("pub-nome").value.trim();
+@@ -153,6 +216,12 @@
+                 return;
+             }
+ 
++            // NOVO: bloqueia se o horário já estiver ocupado (com profissional específica)
++            if(profId && verificarConflitoHorario()) {
++                alert("⚠️ Esse horário já está ocupado com essa profissional. Por favor, escolha outro horário.");
++                return;
++            }
++
+             const id = Date.now();
+             const novoAtendimento = {
+                 id: id,
+@@ -172,6 +241,11 @@
+ 
+             db.ref(`atendimentos/${id}`).set(novoAtendimento)
+                 .then(() => {
++                    // NOVO: registra o horário como ocupado no node público "disponibilidade"
++                    if(profId) {
++                        db.ref(`disponibilidade/${data}/${profId}/${chaveHora(hora)}`).set(true)
++                            .catch(err => console.error("Erro ao registrar disponibilidade:", err));
++                    }
+                     alert("🎉 Agendamento realizado com sucesso! Aguardamos sua visita.");
+                     location.reload();
+                 })
+diff --git a/public/index.html b/public/index.html
+index 7c110c3..e6bc181 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -119,6 +119,9 @@
+                 <a onclick="abrirAba('rh')" class="nav-item">
+                     <i data-lucide="briefcase"></i> Folha / RH
+                 </a>
++                <a onclick="abrirAba('landing')" class="nav-item">
++                    <i data-lucide="globe"></i> Site / Vitrine
++                </a>
+             </nav>
+ 
+             <div class="sidebar-footer">
+@@ -184,6 +187,7 @@
+                 <section id="estoque" class="aba fade-in" style="display:none"></section>
+                 <section id="financeiro" class="aba fade-in" style="display:none"></section>
+                 <section id="servicos" class="aba fade-in" style="display:none"></section>
++                <section id="landing" class="aba fade-in" style="display:none"></section>
+                 <section id="despesas" class="aba fade-in" style="display:none"></section>
+                 
+                 <!-- NOVA ABA: RH -->
+@@ -451,7 +455,7 @@
+         async function carregarComponentes() {
+             const paginas = [
+                 'dashboard', 'agenda', 'novo_atendimento', 'profissionais', 'clientes', 
+-                'estoque', 'financeiro', 'servicos', 'despesas'
++                'estoque', 'financeiro', 'servicos', 'despesas', 'landing'
+             ];
+ 
+             const loads = paginas.map(async (pagina) => {
+diff --git a/public/js/script.js b/public/js/script.js
+index f0c67c6..a89a2ac 100644
+--- a/public/js/script.js
++++ b/public/js/script.js
+@@ -7,6 +7,7 @@
+         cidadePix: "",
+         metaMensal: 0
+     };
++    let landingConfig = {};
+ 
+     const firebaseConfig = {
+     apiKey: "AIzaSyCpNsnwOVDLSZfXn-g6SE1V69BXHs8cYEc",
+@@ -364,6 +365,12 @@
+                 configSistema = snap.val();
+             }
+         });
++
++        // NOVO: CARREGAR CONFIGURAÇÃO DA VITRINE (LANDING PAGE PÚBLICA)
++        db.ref('landingConfig').on('value', snap => {
++            landingConfig = snap.val() || {};
++            preencherFormularioLanding();
++        });
+         
+         db.ref('servicos').on('value', snap => {
+             store.servicos = snap.val() ? Object.values(snap.val()) : [];
+@@ -450,6 +457,49 @@
+             .catch(erro => dispararToast("Erro ao salvar: " + erro.message, "error"));
+     }
+ 
++    // ==========================================
++    // VITRINE / LANDING PAGE PÚBLICA
++    // ==========================================
++    function preencherFormularioLanding() {
++        const t = document.getElementById("land-titulo");
++        if(!t) return; // página ainda não carregada no DOM
++        document.getElementById("land-titulo").value = landingConfig.titulo || "";
++        document.getElementById("land-subtitulo").value = landingConfig.subtitulo || "";
++        document.getElementById("land-whatsapp").value = landingConfig.whatsapp || "";
++        document.getElementById("land-instagram").value = landingConfig.instagram || "";
++        document.getElementById("land-endereco").value = landingConfig.endereco || "";
++        document.getElementById("land-maps").value = landingConfig.googleMapsUrl || "";
++        const preview = document.getElementById("land-capa-preview");
++        if(preview) preview.innerHTML = landingConfig.capa ? `<img src="${landingConfig.capa}" style="width:120px; height:80px; object-fit:cover; border-radius:8px;">` : "";
++    }
++
++    function salvarLandingConfig() {
++        const dados = {
++            titulo: document.getElementById("land-titulo").value.trim(),
++            subtitulo: document.getElementById("land-subtitulo").value.trim(),
++            whatsapp: document.getElementById("land-whatsapp").value.replace(/\D/g, ''),
++            instagram: document.getElementById("land-instagram").value.trim(),
++            endereco: document.getElementById("land-endereco").value.trim(),
++            googleMapsUrl: document.getElementById("land-maps").value.trim()
++        };
++
++        const capaInput = document.getElementById("land-capa");
++        const salvar = (capaBase64) => {
++            if(capaBase64) dados.capa = capaBase64;
++            else if(landingConfig.capa) dados.capa = landingConfig.capa; // mantém a capa atual se não trocou
++
++            db.ref('landingConfig').set(dados)
++                .then(() => dispararToast("🌐 Vitrine atualizada com sucesso!"))
++                .catch(erro => dispararToast("Erro ao salvar: " + erro.message, "error"));
++        };
++
++        if(capaInput && capaInput.files[0]) {
++            processarImagem(capaInput.files[0], salvar);
++        } else {
++            salvar(null);
++        }
++    }
++
+     // ==========================================
+     // 6. NAVEGAÇÃO E UI
+     // ==========================================
+@@ -497,6 +547,11 @@
+                 dataPDV.value = new Date().toISOString().split('T')[0];
+             }
+         }
++
++        // NOVO: preenche o formulário da vitrine ao abrir essa aba
++        if (idAba === 'landing') {
++            setTimeout(preencherFormularioLanding, 250);
++        }
+     }
+ 
+     function dispararToast(msg, tipo = 'success') {
+@@ -852,6 +907,13 @@
+         } else {
+             // --- MODO NOVA VENDA ---
+             db.ref(`atendimentos/${id}`).set(atendimento);
++
++            // NOVO: registra o horário como ocupado no node público "disponibilidade"
++            // (usado pela página pública de agendamento pra evitar choque de horário)
++            if(idProfissional) {
++                db.ref(`disponibilidade/${atendimento.data}/${idProfissional}/${atendimento.hora.replace(':','-')}`).set(true)
++                    .catch(err => console.error("Erro ao registrar disponibilidade:", err));
++            }
+             
+             // --- NOVO: CONFIRMAÇÃO DE IMPRESSÃO ---
+             if(confirm("✅ Venda Finalizada com sucesso!\n\nDeseja imprimir o Cupom?")) {
+@@ -976,6 +1038,16 @@
+         }
+     }
+ 
++    // NOVO: exclui o atendimento e limpa o registro de horário ocupado (disponibilidade)
++    function excluirAtendimentoEDisponibilidade(id, data, profissionalId, hora) {
++        if(!confirm('Excluir este atendimento?')) return;
++        db.ref(`atendimentos/${id}`).remove();
++        if(profissionalId && data && hora) {
++            db.ref(`disponibilidade/${data}/${profissionalId}/${hora.replace(':','-')}`).remove()
++                .catch(err => console.error("Erro ao limpar disponibilidade:", err));
++        }
++    }
++
+     function renderAgenda() {
+         const div = document.getElementById("lista-agenda");
+         const inputDate = document.getElementById("agenda-date-input");
+@@ -1014,7 +1086,7 @@
+                     ${a.clienteId ? `<button class="btn-small bg-purple" onclick="abrirHistoricoRapido('${a.clienteId}')" title="Ver Histórico Rápido"><i data-lucide="eye" style="width:14px"></i></button>` : ''}
+                     <button class="btn-small bg-green" onclick="chamarCliente('${a.id}', '${a.nomeCliente}')" title="Chamar na TV"><i data-lucide="megaphone" style="width:14px"></i></button>
+                     <button class="btn-small bg-yellow" onclick="editarAtendimento(${a.id})" title="Editar Venda"><i data-lucide="pencil" style="width:14px"></i></button>
+-                    <button class="btn-small bg-purple" onclick="if(confirm('Excluir este atendimento?')) db.ref('atendimentos/${a.id}').remove()" title="Excluir"><i data-lucide="trash-2" style="width:14px"></i></button>
++                    <button class="btn-small bg-purple" onclick="excluirAtendimentoEDisponibilidade(${a.id}, '${a.data}', '${a.profissionalId || ''}', '${a.hora}')" title="Excluir"><i data-lucide="trash-2" style="width:14px"></i></button>
+                 </div>
+             </div>
+         `).join("");
+@@ -1462,22 +1534,50 @@
+     function salvarServicoCad() {
+         const nome = document.getElementById("serv-nome").value;
+         const preco = document.getElementById("serv-preco").value;
++        const descricao = document.getElementById("serv-descricao") ? document.getElementById("serv-descricao").value.trim() : "";
++        const destaque = document.getElementById("serv-destaque") ? document.getElementById("serv-destaque").checked : false;
++        const fotoInput = document.getElementById("serv-foto");
++
+         if(!nome || !preco) return dispararToast("Preencha nome e preço!", "error");
+-        if (idServicoEdicao) {
+-            db.ref(`servicos/${idServicoEdicao}`).update({ nome: nome, preco: preco }).then(() => dispararToast("Serviço atualizado!"));
+-            cancelarEdicaoServico();
++
++        const salvar = (fotoBase64) => {
++            const dados = { nome, preco, descricao, destaque };
++            if(fotoBase64) dados.foto = fotoBase64;
++
++            if (idServicoEdicao) {
++                db.ref(`servicos/${idServicoEdicao}`).update(dados).then(() => dispararToast("Serviço atualizado!"));
++                cancelarEdicaoServico();
++            } else {
++                const id = Date.now();
++                db.ref(`servicos/${id}`).set({ id, ...dados });
++                dispararToast("Serviço salvo!");
++                cancelarEdicaoServico();
++            }
++        };
++
++        if(fotoInput && fotoInput.files[0]) {
++            processarImagem(fotoInput.files[0], salvar);
+         } else {
+-            const id = Date.now();
+-            db.ref(`servicos/${id}`).set({ id, nome, preco });
+-            dispararToast("Serviço salvo!");
+-            document.getElementById("serv-nome").value = "";
+-            document.getElementById("serv-preco").value = "";
++            salvar(null);
+         }
+     }
+ 
+     function renderListaServicosCad() {
+         const div = document.getElementById("lista-servicos-cad");
+-        div.innerHTML = store.servicos.map(s => `<div class="glass-panel" style="padding:15px; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px"><div><strong>${s.nome}</strong><br><span class="text-gradient">R$ ${parseFloat(s.preco).toFixed(2)}</span></div><div style="display:flex; gap:10px"><button class="btn-small bg-yellow" onclick="prepararEdicaoServico(${s.id})" title="Editar"><i data-lucide="pencil" style="width:14px"></i></button><button class="btn-small bg-purple" onclick="if(confirm('Excluir?')) db.ref('servicos/${s.id}').remove()" title="Excluir"><i data-lucide="trash-2" style="width:14px"></i></button></div></div>`).join("");
++        div.innerHTML = store.servicos.map(s => `<div class="glass-panel" style="padding:15px; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:10px;">
++            <div style="display:flex; gap:12px; align-items:center; flex:1; min-width:0;">
++                ${s.foto ? `<img src="${s.foto}" style="width:50px; height:50px; object-fit:cover; border-radius:8px; flex-shrink:0;">` : ''}
++                <div style="min-width:0;">
++                    <strong>${s.nome}</strong> ${s.destaque ? '⭐' : ''}<br>
++                    <span class="text-gradient">R$ ${parseFloat(s.preco).toFixed(2)}</span>
++                    ${s.descricao ? `<br><small class="text-muted" style="display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px;">${s.descricao}</small>` : ''}
++                </div>
++            </div>
++            <div style="display:flex; gap:10px; flex-shrink:0;">
++                <button class="btn-small bg-yellow" onclick="prepararEdicaoServico(${s.id})" title="Editar"><i data-lucide="pencil" style="width:14px"></i></button>
++                <button class="btn-small bg-purple" onclick="if(confirm('Excluir?')) db.ref('servicos/${s.id}').remove()" title="Excluir"><i data-lucide="trash-2" style="width:14px"></i></button>
++            </div>
++        </div>`).join("");
+         lucide.createIcons();
+     }
+ 
+@@ -1486,6 +1586,10 @@
+         if(!s) return;
+         document.getElementById("serv-nome").value = s.nome;
+         document.getElementById("serv-preco").value = s.preco;
++        if(document.getElementById("serv-descricao")) document.getElementById("serv-descricao").value = s.descricao || "";
++        if(document.getElementById("serv-destaque")) document.getElementById("serv-destaque").checked = !!s.destaque;
++        const preview = document.getElementById("serv-foto-preview");
++        if(preview) preview.innerHTML = s.foto ? `<img src="${s.foto}" style="width:80px; height:80px; object-fit:cover; border-radius:8px;">` : "";
+         idServicoEdicao = id;
+         const btn = document.getElementById("btn-salvar-servico");
+         if(btn) { btn.innerText = "ATUALIZAR"; btn.style.background = "var(--warning)"; }
+@@ -1497,6 +1601,10 @@
+         idServicoEdicao = null;
+         document.getElementById("serv-nome").value = "";
+         document.getElementById("serv-preco").value = "";
++        if(document.getElementById("serv-descricao")) document.getElementById("serv-descricao").value = "";
++        if(document.getElementById("serv-destaque")) document.getElementById("serv-destaque").checked = false;
++        if(document.getElementById("serv-foto")) document.getElementById("serv-foto").value = "";
++        if(document.getElementById("serv-foto-preview")) document.getElementById("serv-foto-preview").innerHTML = "";
+         const btn = document.getElementById("btn-salvar-servico");
+         if(btn) { btn.innerText = "Salvar"; btn.style.background = ""; }
+         document.getElementById("btn-cancelar-servico").style.display = "none";
+diff --git a/public/pages/servicos.html b/public/pages/servicos.html
+index 520d890..8d88dd9 100644
+--- a/public/pages/servicos.html
++++ b/public/pages/servicos.html
+@@ -4,6 +4,21 @@
+         <input type="text" id="serv-nome" placeholder="Nome do Serviço" class="modern-input" style="flex:2;">
+         <input type="number" id="serv-preco" placeholder="Valor (R$)" class="modern-input" style="flex:1;">
+     </div>
++
++    <div class="mt-10">
++        <textarea id="serv-descricao" placeholder="Descrição curta (aparece na página de agendamento e no site, ex: 'Esmaltação em gel com acabamento duradouro')" class="modern-input" rows="2" style="resize:vertical;"></textarea>
++    </div>
++
++    <div class="mt-10" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
++        <div style="flex:1; min-width:200px;">
++            <label class="label-small">Foto do serviço (opcional)</label>
++            <input type="file" id="serv-foto" accept="image/*" class="modern-input">
++        </div>
++        <label style="display:flex; align-items:center; gap:8px; font-size:13px; white-space:nowrap; padding-top:18px;">
++            <input type="checkbox" id="serv-destaque"> ⭐ Destacar no site
++        </label>
++    </div>
++    <div id="serv-foto-preview" style="margin-top:8px;"></div>
+     
+     <div class="action-buttons mt-10 mobile-stack">
+         <button onclick="salvarServicoCad()" id="btn-salvar-servico" class="btn-primary full-width">Salvar</button>

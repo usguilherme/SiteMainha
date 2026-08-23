@@ -4,6 +4,21 @@
         <input type="text" id="serv-nome" placeholder="Nome do Serviço" class="modern-input" style="flex:2;">
         <input type="number" id="serv-preco" placeholder="Valor (R$)" class="modern-input" style="flex:1;">
     </div>
+
+    <div class="mt-10">
+        <textarea id="serv-descricao" placeholder="Descrição curta (aparece na página de agendamento e no site, ex: 'Esmaltação em gel com acabamento duradouro')" class="modern-input" rows="2" style="resize:vertical;"></textarea>
+    </div>
+
+    <div class="mt-10" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <div style="flex:1; min-width:200px;">
+            <label class="label-small">Foto do serviço (opcional)</label>
+            <input type="file" id="serv-foto" accept="image/*" class="modern-input">
+        </div>
+        <label style="display:flex; align-items:center; gap:8px; font-size:13px; white-space:nowrap; padding-top:18px;">
+            <input type="checkbox" id="serv-destaque"> ⭐ Destacar no site
+        </label>
+    </div>
+    <div id="serv-foto-preview" style="margin-top:8px;"></div>
     
     <div class="action-buttons mt-10 mobile-stack">
         <button onclick="salvarServicoCad()" id="btn-salvar-servico" class="btn-primary full-width">Salvar</button>

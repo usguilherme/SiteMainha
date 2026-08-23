@@ -119,6 +119,9 @@
                 <a onclick="abrirAba('rh')" class="nav-item">
                     <i data-lucide="briefcase"></i> Folha / RH
                 </a>
+                <a onclick="abrirAba('landing')" class="nav-item">
+                    <i data-lucide="globe"></i> Site / Vitrine
+                </a>
             </nav>
 
             <div class="sidebar-footer">
@@ -184,6 +187,7 @@
                 <section id="estoque" class="aba fade-in" style="display:none"></section>
                 <section id="financeiro" class="aba fade-in" style="display:none"></section>
                 <section id="servicos" class="aba fade-in" style="display:none"></section>
+                <section id="landing" class="aba fade-in" style="display:none"></section>
                 <section id="despesas" class="aba fade-in" style="display:none"></section>
                 
                 <!-- NOVA ABA: RH -->
@@ -451,7 +455,7 @@
         async function carregarComponentes() {
             const paginas = [
                 'dashboard', 'agenda', 'novo_atendimento', 'profissionais', 'clientes', 
-                'estoque', 'financeiro', 'servicos', 'despesas'
+                'estoque', 'financeiro', 'servicos', 'despesas', 'landing'
             ];
 
             const loads = paginas.map(async (pagina) => {

@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agendamento Online - Cássia Nunes</title>
+    <!-- CORRIGIDO: o CSS do projeto fica dentro da pasta /css, não na raiz -->
     <link rel="stylesheet" href="css/style.css">
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         body {
@@ -76,12 +78,14 @@
         </div>
     </div>
 
-    <!-- Firebase SDKs -->
+    <!-- CORRIGIDO: usando a MESMA versão do Firebase SDK (8.10.1, sintaxe clássica)
+         que o resto do sistema (index.html) já usa. Evita conflitos de inicialização
+         e comportamento inconsistente entre v8 e v9-compat. -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
     <script>
-        // Configuração real do Firebase CassiaNunesHair
+        // Configuração do Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyCpNsnwOVDLSZfXn-g6SE1V69BXHs8cYEc",
             authDomain: "mainhasite.firebaseapp.com",
@@ -133,7 +137,9 @@
             console.error("Erro ao carregar profissionais:", err);
         });
 
-        // ===== HORÁRIOS OCUPADOS =====
+        // ===== NOVO: HORÁRIOS OCUPADOS =====
+        // Consulta o node público "disponibilidade" (sem dados sensíveis de clientes)
+        // sempre que a profissional ou a data mudarem, e mostra os horários já ocupados.
         let horariosOcupadosCache = [];
 
         function chaveHora(hora) {
@@ -152,6 +158,7 @@
             }
 
             if(!profId) {
+                // Sem profissional específica escolhida, não dá pra checar conflito com precisão
                 divAviso.style.display = "block";
                 divAviso.innerHTML = "ℹ️ Escolha uma profissional específica para vermos os horários já ocupados.";
                 return;
@@ -186,7 +193,7 @@
         document.getElementById("pub-data").addEventListener("change", carregarHorariosOcupados);
         document.getElementById("pub-profissional").addEventListener("change", carregarHorariosOcupados);
         document.getElementById("pub-hora").addEventListener("change", verificarConflitoHorario);
-        // ===== FIM HORÁRIOS OCUPADOS =====
+        // ===== FIM NOVO =====
 
         // 3. Salva o Agendamento direto na Agenda do Salão
         function salvarAgendamentoPublico() {
@@ -209,6 +216,7 @@
                 return;
             }
 
+            // NOVO: bloqueia se o horário já estiver ocupado (com profissional específica)
             if(profId && verificarConflitoHorario()) {
                 alert("⚠️ Esse horário já está ocupado com essa profissional. Por favor, escolha outro horário.");
                 return;
@@ -233,6 +241,7 @@
 
             db.ref(`atendimentos/${id}`).set(novoAtendimento)
                 .then(() => {
+                    // NOVO: registra o horário como ocupado no node público "disponibilidade"
                     if(profId) {
                         db.ref(`disponibilidade/${data}/${profId}/${chaveHora(hora)}`).set(true)
                             .catch(err => console.error("Erro ao registrar disponibilidade:", err));
