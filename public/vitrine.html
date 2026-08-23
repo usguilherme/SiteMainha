@@ -4,225 +4,388 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cássia Nunes | Salão de Beleza</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    
     <style>
+        /* ===== VARIÁVEIS DE ALTO PADRÃO ===== */
+        :root {
+            --bg-dark: #0b0914;
+            --bg-surface: rgba(30, 26, 43, 0.6);
+            --primary: #e5a9a9; /* Rose Gold suave */
+            --primary-glow: rgba(229, 169, 169, 0.4);
+            --gold: #d4af37;
+            --text-main: #ffffff;
+            --text-muted: #9ca3af;
+            --font-display: 'Outfit', sans-serif;
+            --font-body: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            height: auto !important;
-            overflow-y: auto !important;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
             min-height: 100vh;
         }
 
+        /* ===== ANIMAÇÕES ===== */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-up {
+            animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* ===== HERO SECTION (Capa) ===== */
         .vt-hero {
             position: relative;
             text-align: center;
-            padding: 70px 20px 50px;
-            background-image: radial-gradient(circle at 50% 0%, #3b0764 0%, transparent 60%);
-            background-size: cover;
-            background-position: center;
-        }
-        .vt-hero.tem-capa {
-            padding-top: 220px;
-        }
-        .vt-hero-capa {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 220px;
-            object-fit: cover;
-            mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
-            -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
-            opacity: 0.85;
-        }
-        .vt-hero-conteudo { position: relative; z-index: 2; }
-        .vt-hero h1 {
-            font-family: var(--font-display);
-            font-size: 32px;
-            font-weight: 800;
-        }
-        .vt-hero p {
-            color: var(--text-muted);
-            font-size: 15px;
-            margin-top: 8px;
-            max-width: 440px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .vt-cta {
-            display: inline-block;
-            margin-top: 22px;
-            text-decoration: none;
-        }
-
-        .vt-section {
-            max-width: 760px;
-            margin: 0 auto;
-            padding: 30px 20px;
-        }
-        .vt-section-titulo {
-            font-family: var(--font-display);
-            font-size: 20px;
-            margin-bottom: 18px;
-            text-align: center;
-        }
-
-        /* ===== ESTILO "CARDÁPIO" ===== */
-        .vt-menu-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 16px;
-        }
-        .vt-item {
-            display: flex;
-            gap: 14px;
-            padding: 14px;
-            align-items: center;
-        }
-        .vt-item.destaque {
-            border: 1px solid var(--primary);
-            box-shadow: 0 0 25px var(--primary-dim);
-        }
-        .vt-item-foto {
-            width: 70px;
-            height: 70px;
-            border-radius: 12px;
-            object-fit: cover;
-            flex-shrink: 0;
-            background: rgba(255,255,255,0.05);
-        }
-        .vt-item-foto-placeholder {
-            width: 70px;
-            height: 70px;
-            border-radius: 12px;
-            flex-shrink: 0;
-            background: var(--primary-dim);
+            padding: 100px 20px 60px;
+            background: radial-gradient(circle at top, #2d1b3d 0%, var(--bg-dark) 70%);
+            min-height: 45vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 26px;
         }
-        .vt-item-info { flex: 1; min-width: 0; }
-        .vt-item-nome-linha {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            gap: 10px;
+        .vt-hero.tem-capa {
+            padding-top: 180px;
+            background: transparent;
         }
-        .vt-item-nome {
-            font-weight: 700;
-            font-size: 15px;
+        .vt-hero-capa {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover;
+            mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+            z-index: 0;
+            opacity: 0.6;
         }
-        .vt-item-preco {
+        .vt-hero-conteudo {
+            position: relative;
+            z-index: 2;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        #vt-selo {
+            font-family: var(--font-display);
+            font-size: 13px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
             color: var(--primary);
-            font-weight: 700;
-            white-space: nowrap;
-            font-size: 15px;
-        }
-        .vt-item-desc {
-            color: var(--text-muted);
-            font-size: 12.5px;
-            margin-top: 3px;
-            line-height: 1.4;
-        }
-        .vt-badge-destaque {
+            margin-bottom: 12px;
             display: inline-block;
-            font-size: 10px;
-            background: var(--primary-dim);
-            color: var(--primary);
-            padding: 2px 8px;
-            border-radius: 20px;
-            margin-bottom: 4px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
+            background: rgba(229, 169, 169, 0.1);
+            padding: 6px 16px;
+            border-radius: 30px;
+            border: 1px solid rgba(229, 169, 169, 0.2);
+        }
+        .vt-hero h1 {
+            font-family: var(--font-display);
+            font-size: 42px;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 16px;
+            background: linear-gradient(to right, #fff, #e5a9a9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .vt-hero p {
+            color: var(--text-muted);
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 30px;
         }
 
-        .vt-contato {
+        /* ===== BOTÃO PRINCIPAL ===== */
+        .btn-glow {
+            display: inline-block;
+            background: linear-gradient(135deg, #c471ed, #f64f59);
+            color: white;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 15px;
+            padding: 16px 32px;
+            border-radius: 50px;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 10px 20px rgba(246, 79, 89, 0.3);
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-glow:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 25px rgba(246, 79, 89, 0.5);
+        }
+
+        /* ===== SEÇÕES ===== */
+        .vt-section {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .vt-section-titulo {
+            font-family: var(--font-display);
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        /* ===== GRID DE CARDS (O Novo Cardápio) ===== */
+        .vt-menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .vt-card {
+            background: var(--bg-surface);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, border-color 0.3s ease;
             display: flex;
             flex-direction: column;
-            gap: 14px;
-            align-items: center;
-            text-align: center;
         }
-        .vt-contato a {
-            color: var(--text-main);
-            text-decoration: none;
+        .vt-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(229, 169, 169, 0.3);
+        }
+        .vt-card.destaque {
+            border: 1px solid var(--gold);
+            box-shadow: 0 10px 30px rgba(212, 175, 55, 0.15);
+        }
+
+        .vt-card-img-wrapper {
+            width: 100%;
+            height: 200px;
+            position: relative;
+            background: #151122;
+        }
+        .vt-card-foto {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .vt-card-placeholder {
+            width: 100%;
+            height: 100%;
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 14px;
+            justify-content: center;
+            font-size: 40px;
+            background: linear-gradient(45deg, #1e1a2b, #2d2640);
         }
-        .vt-contato a:hover { color: var(--primary); }
+        .vt-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: var(--gold);
+            color: #000;
+            font-family: var(--font-display);
+            font-size: 11px;
+            font-weight: 800;
+            padding: 4px 12px;
+            border-radius: 20px;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .vt-card-body {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+        .vt-card-nome {
+            font-family: var(--font-display);
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+        .vt-card-desc {
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            flex-grow: 1;
+        }
+        .vt-card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        .vt-card-preco {
+            font-family: var(--font-display);
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        .vt-btn-mini {
+            background: rgba(255,255,255,0.05);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .vt-btn-mini:hover {
+            background: var(--primary);
+            color: #000;
+            border-color: var(--primary);
+        }
+
+        /* ===== CONTATO E FOOTER ===== */
+        .vt-contato-box {
+            background: var(--bg-surface);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 24px;
+            padding: 40px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        .vt-contato-links {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            align-items: center;
+            margin-top: 24px;
+        }
+        .vt-link-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 14px 24px;
+            border-radius: 16px;
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            width: 100%;
+            max-width: 320px;
+            transition: background 0.2s;
+        }
+        .vt-link-btn:hover { background: rgba(255,255,255,0.08); }
+        .vt-link-icon { font-size: 20px; }
 
         .vt-footer {
             text-align: center;
-            padding: 30px 20px 90px;
-            color: var(--text-muted);
-            font-size: 12px;
+            padding: 20px 20px 100px;
+            color: rgba(255,255,255,0.3);
+            font-size: 13px;
         }
 
+        /* ===== CTA FLUTUANTE MOBILE ===== */
         .vt-fixed-cta {
             position: fixed;
-            bottom: 16px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            width: calc(100% - 32px);
-            max-width: 420px;
+            width: calc(100% - 40px);
+            max-width: 400px;
             z-index: 50;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
         }
-        @media (min-width: 640px) {
+        @media (min-width: 768px) {
             .vt-fixed-cta { display: none; }
+            .vt-hero h1 { font-size: 56px; }
+            .vt-contato-links { flex-direction: row; justify-content: center; }
+            .vt-link-btn { width: auto; }
         }
     </style>
 </head>
 <body>
 
-    <div class="vt-hero fade-in" id="vt-hero">
+    <!-- HERO SECTION -->
+    <header class="vt-hero animate-up" id="vt-hero">
         <div class="vt-hero-conteudo">
-            <h2 class="text-gradient" style="font-family: var(--font-display); font-size: 14px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px;" id="vt-selo">Cássia Nunes</h2>
-            <h1 id="vt-titulo">Beleza, cuidado <br> e autoestima em um só lugar</h1>
-            <p id="vt-subtitulo">Confira nossos serviços e agende seu horário em poucos segundos.</p>
-            <a href="agendar.html" class="btn-glow vt-cta">📅 AGENDAR MEU HORÁRIO</a>
+            <span id="vt-selo">Cássia Nunes Hair</span>
+            <h1 id="vt-titulo">Beleza, cuidado e autoestima</h1>
+            <p id="vt-subtitulo">Confira nossos serviços, inspire-se e reserve seu momento de cuidado em poucos cliques.</p>
+            <a href="agendar.html" class="btn-glow">📅 AGENDAR MEU HORÁRIO</a>
         </div>
-    </div>
+    </header>
 
-    <div class="vt-section">
-        <h2 class="vt-section-titulo">⭐ Destaques</h2>
+    <!-- DESTAQUES -->
+    <section class="vt-section animate-up" style="animation-delay: 0.2s;">
+        <h2 class="vt-section-titulo">✨ Mais Pedidos</h2>
         <div id="vt-lista-destaques" class="vt-menu-grid"></div>
-    </div>
+    </section>
 
-    <div class="vt-section">
-        <h2 class="vt-section-titulo">💅 Cardápio de Serviços</h2>
+    <!-- TODOS OS SERVIÇOS -->
+    <section class="vt-section animate-up" style="animation-delay: 0.3s;">
+        <h2 class="vt-section-titulo">💅 Nossos Serviços</h2>
         <div id="vt-lista-servicos" class="vt-menu-grid">
-            <div class="glass-panel vt-item"><span style="color:var(--text-muted); font-weight:400;">Carregando serviços...</span></div>
+            <!-- Loading de Luxo -->
+            <div class="vt-card" style="align-items:center; padding: 40px; color: var(--text-muted);">
+                <i>Carregando o cardápio de beleza...</i>
+            </div>
         </div>
-    </div>
+    </section>
 
-    <div class="vt-section">
-        <div class="glass-panel vt-contato">
-            <h2 style="margin-bottom:0;">📍 Onde estamos</h2>
-            <a id="vt-endereco-link" href="#" target="_blank">
-                <span id="vt-endereco-texto">Endereço não configurado ainda</span>
-            </a>
-            <a id="vt-whatsapp-link" href="#" target="_blank">
-                <span>📱 Falar no WhatsApp</span>
-            </a>
-            <a id="vt-instagram-link" href="#" target="_blank" style="display:none;">
-                <span>📷 Nosso Instagram</span>
-            </a>
+    <!-- CONTATO / LOCALIZAÇÃO -->
+    <section class="vt-section animate-up" style="animation-delay: 0.4s;">
+        <div class="vt-contato-box">
+            <h2 style="font-family: var(--font-display); font-size: 24px; margin-bottom: 8px;">Visite nosso espaço</h2>
+            <p style="color: var(--text-muted); font-size: 15px;">Estamos prontas para te receber com muito conforto.</p>
+            
+            <div class="vt-contato-links">
+                <a id="vt-endereco-link" href="#" target="_blank" class="vt-link-btn">
+                    <span class="vt-link-icon">📍</span>
+                    <span id="vt-endereco-texto">Endereço não configurado</span>
+                </a>
+                <a id="vt-whatsapp-link" href="#" target="_blank" class="vt-link-btn">
+                    <span class="vt-link-icon">📱</span>
+                    <span>WhatsApp</span>
+                </a>
+                <a id="vt-instagram-link" href="#" target="_blank" class="vt-link-btn" style="display:none;">
+                    <span class="vt-link-icon">📷</span>
+                    <span>Instagram</span>
+                </a>
+            </div>
         </div>
-    </div>
+    </section>
 
-    <div class="vt-footer">
-        Cássia Nunes Hair &copy; <span id="vt-ano"></span>
-    </div>
+    <footer class="vt-footer">
+        Cássia Nunes Hair &copy; <span id="vt-ano"></span> • Feito com ❤️
+    </footer>
 
-    <a href="agendar.html" class="btn-glow vt-fixed-cta" style="text-align:center; display:block;">📅 Agendar Agora</a>
+    <!-- Botão Flutuante Mobile -->
+    <a href="agendar.html" class="btn-glow vt-fixed-cta">📅 AGENDAR AGORA</a>
 
-    <!-- Firebase -->
+    <!-- Firebase SDK (Mesma lógica mantida intacta) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
         document.getElementById("vt-ano").innerText = new Date().getFullYear();
 
+        // Configuração Oficial
         const firebaseConfig = {
             apiKey: "AIzaSyCpNsnwOVDLSZfXn-g6SE1V69BXHs8cYEc",
             authDomain: "mainhasite.firebaseapp.com",
@@ -235,13 +398,13 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // ===== Carrega a configuração da vitrine (título, contato, capa) =====
+        // ===== CONFIGURAÇÕES DA VITRINE (TÍTULO, CAPA, LINKS) =====
         db.ref('landingConfig').once('value').then(snap => {
             const cfg = snap.val() || {};
 
             if(cfg.titulo) {
                 document.getElementById("vt-titulo").innerHTML = cfg.titulo;
-                document.title = cfg.titulo + " | Salão de Beleza";
+                document.title = cfg.titulo + " | Salão Premium";
             }
             if(cfg.subtitulo) document.getElementById("vt-subtitulo").innerText = cfg.subtitulo;
 
@@ -270,9 +433,9 @@
                 linkInsta.href = cfg.instagram;
                 linkInsta.style.display = "flex";
             }
-        }).catch(err => console.error("Erro ao carregar configuração da vitrine:", err));
+        }).catch(err => console.error("Erro config vitrine:", err));
 
-        // ===== Carrega os serviços (cardápio) =====
+        // ===== CARREGAMENTO DE SERVIÇOS E GERAÇÃO DOS CARDS =====
         db.ref('servicos').on('value', snap => {
             const servicosObj = snap.val() ? snap.val() : {};
             let servicos = Object.values(servicosObj);
@@ -282,38 +445,51 @@
             const secDestaques = divDestaques.closest('.vt-section');
 
             if(servicos.length === 0) {
-                divTodos.innerHTML = `<div class="glass-panel vt-item"><span style="color:var(--text-muted); font-weight:400;">Em breve, novidades!</span></div>`;
+                divTodos.innerHTML = `<div class="vt-card" style="padding: 30px; text-align:center;">Em breve, novidades no nosso cardápio!</div>`;
                 secDestaques.style.display = "none";
                 return;
             }
 
+            // Ordena alfabeticamente
             servicos.sort((a, b) => a.nome.localeCompare(b.nome));
 
-            const renderItem = (s) => `
-                <div class="glass-panel vt-item ${s.destaque ? 'destaque' : ''}">
-                    ${s.foto
-                        ? `<img src="${s.foto}" class="vt-item-foto" alt="${s.nome}">`
-                        : `<div class="vt-item-foto-placeholder">💅</div>`
-                    }
-                    <div class="vt-item-info">
-                        ${s.destaque ? '<span class="vt-badge-destaque">⭐ DESTAQUE</span><br>' : ''}
-                        <div class="vt-item-nome-linha">
-                            <span class="vt-item-nome">${s.nome}</span>
-                            <span class="vt-item-preco">R$ ${parseFloat(s.preco).toFixed(2)}</span>
+            // Função que desenha o HTML de um Card Supremo
+            const renderCard = (s) => {
+                // Formatação do preço para moeda Brasileira (R$)
+                const precoFormatado = parseFloat(s.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                
+                return `
+                <div class="vt-card ${s.destaque ? 'destaque' : ''}">
+                    <div class="vt-card-img-wrapper">
+                        ${s.foto 
+                            ? `<img src="${s.foto}" class="vt-card-foto" alt="${s.nome}" loading="lazy">` 
+                            : `<div class="vt-card-placeholder">✨</div>`
+                        }
+                        ${s.destaque ? '<div class="vt-badge">★ DESTAQUE</div>' : ''}
+                    </div>
+                    <div class="vt-card-body">
+                        <h3 class="vt-card-nome">${s.nome}</h3>
+                        ${s.descricao ? `<p class="vt-card-desc">${s.descricao}</p>` : '<p class="vt-card-desc"></p>'}
+                        <div class="vt-card-footer">
+                            <span class="vt-card-preco">${precoFormatado}</span>
+                            <a href="agendar.html" class="vt-btn-mini">Agendar</a>
                         </div>
-                        ${s.descricao ? `<div class="vt-item-desc">${s.descricao}</div>` : ''}
                     </div>
                 </div>`;
+            };
 
+            // Separa os serviços em Destaques e Normais
             const destaques = servicos.filter(s => s.destaque);
+            
             if(destaques.length === 0) {
                 secDestaques.style.display = "none";
             } else {
                 secDestaques.style.display = "block";
-                divDestaques.innerHTML = destaques.map(renderItem).join('');
+                divDestaques.innerHTML = destaques.map(renderCard).join('');
             }
 
-            divTodos.innerHTML = servicos.map(renderItem).join('');
+            // A lista "Nossos Serviços" mostra todos
+            divTodos.innerHTML = servicos.map(renderCard).join('');
         });
     </script>
 </body>
