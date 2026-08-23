@@ -3,226 +3,259 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cássia Nunes | Salão de Beleza</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>Agendar Horário | Cássia Nunes</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
+        /* ===== VARIÁVEIS DE ALTO PADRÃO ===== */
+        :root {
+            --bg-dark: #0b0914;
+            --bg-surface: rgba(30, 26, 43, 0.7);
+            --primary: #e5a9a9;
+            --gold: #d4af37;
+            --text-main: #ffffff;
+            --text-muted: #9ca3af;
+            --font-display: 'Outfit', sans-serif;
+            --font-body: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            height: auto !important;
-            overflow-y: auto !important;
+            background-color: var(--bg-dark);
+            background-image: radial-gradient(circle at top, #2d1b3d 0%, var(--bg-dark) 80%);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            -webkit-font-smoothing: antialiased;
             min-height: 100vh;
-        }
-
-        .vt-hero {
-            position: relative;
-            text-align: center;
-            padding: 70px 20px 50px;
-            background-image: radial-gradient(circle at 50% 0%, #3b0764 0%, transparent 60%);
-            background-size: cover;
-            background-position: center;
-        }
-        .vt-hero.tem-capa {
-            padding-top: 220px;
-        }
-        .vt-hero-capa {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 220px;
-            object-fit: cover;
-            mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
-            -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
-            opacity: 0.85;
-        }
-        .vt-hero-conteudo { position: relative; z-index: 2; }
-        .vt-hero h1 {
-            font-family: var(--font-display);
-            font-size: 32px;
-            font-weight: 800;
-        }
-        .vt-hero p {
-            color: var(--text-muted);
-            font-size: 15px;
-            margin-top: 8px;
-            max-width: 440px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .vt-cta {
-            display: inline-block;
-            margin-top: 22px;
-            text-decoration: none;
-        }
-
-        .vt-section {
-            max-width: 760px;
-            margin: 0 auto;
-            padding: 30px 20px;
-        }
-        .vt-section-titulo {
-            font-family: var(--font-display);
-            font-size: 20px;
-            margin-bottom: 18px;
-            text-align: center;
-        }
-
-        /* ===== ESTILO "CARDÁPIO" ===== */
-        .vt-menu-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 16px;
-        }
-        .vt-item {
             display: flex;
-            gap: 14px;
-            padding: 14px;
-            align-items: center;
-        }
-        .vt-item.destaque {
-            border: 1px solid var(--primary);
-            box-shadow: 0 0 25px var(--primary-dim);
-        }
-        .vt-item-foto {
-            width: 70px;
-            height: 70px;
-            border-radius: 12px;
-            object-fit: cover;
-            flex-shrink: 0;
-            background: rgba(255,255,255,0.05);
-        }
-        .vt-item-foto-placeholder {
-            width: 70px;
-            height: 70px;
-            border-radius: 12px;
-            flex-shrink: 0;
-            background: var(--primary-dim);
-            display: flex;
-            align-items: center;
             justify-content: center;
-            font-size: 26px;
-        }
-        .vt-item-info { flex: 1; min-width: 0; }
-        .vt-item-nome-linha {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            gap: 10px;
-        }
-        .vt-item-nome {
-            font-weight: 700;
-            font-size: 15px;
-        }
-        .vt-item-preco {
-            color: var(--primary);
-            font-weight: 700;
-            white-space: nowrap;
-            font-size: 15px;
-        }
-        .vt-item-desc {
-            color: var(--text-muted);
-            font-size: 12.5px;
-            margin-top: 3px;
-            line-height: 1.4;
-        }
-        .vt-badge-destaque {
-            display: inline-block;
-            font-size: 10px;
-            background: var(--primary-dim);
-            color: var(--primary);
-            padding: 2px 8px;
-            border-radius: 20px;
-            margin-bottom: 4px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
+            align-items: center;
+            padding: 20px;
         }
 
-        .vt-contato {
+        /* ===== ANIMAÇÃO ===== */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-up {
+            animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* ===== CONTAINER DO FORMULÁRIO ===== */
+        .agendar-container {
+            background: var(--bg-surface);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 40px 30px;
+            width: 100%;
+            max-width: 480px;
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+        }
+
+        /* ===== HEADER DO FORM ===== */
+        .form-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .selo-marca {
+            font-family: var(--font-display);
+            font-size: 11px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--primary);
+            margin-bottom: 12px;
+            display: inline-block;
+            background: rgba(229, 169, 169, 0.1);
+            padding: 4px 12px;
+            border-radius: 30px;
+            border: 1px solid rgba(229, 169, 169, 0.2);
+        }
+        .form-header h2 {
+            font-family: var(--font-display);
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(to right, #fff, #e5a9a9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .form-header p {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-top: 6px;
+        }
+
+        /* ===== INPUTS ===== */
+        .form-group {
             display: flex;
             flex-direction: column;
-            gap: 14px;
-            align-items: center;
-            text-align: center;
+            gap: 6px;
+            margin-bottom: 16px;
         }
-        .vt-contato a {
-            color: var(--text-main);
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-        }
-        .vt-contato a:hover { color: var(--primary); }
-
-        .vt-footer {
-            text-align: center;
-            padding: 30px 20px 90px;
-            color: var(--text-muted);
+        .label-small {
+            font-family: var(--font-display);
             font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 4px;
+        }
+        .modern-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            font-family: var(--font-body);
+            font-size: 15px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            transition: all 0.3s ease;
+            outline: none;
+            width: 100%;
+        }
+        .modern-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(229, 169, 169, 0.15);
+            background: rgba(0, 0, 0, 0.5);
+        }
+        .modern-input::placeholder { color: rgba(255,255,255,0.3); }
+        
+        select.modern-input option {
+            background-color: var(--bg-dark);
+            color: white;
         }
 
-        .vt-fixed-cta {
-            position: fixed;
-            bottom: 16px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 32px);
-            max-width: 420px;
-            z-index: 50;
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
         }
-        @media (min-width: 640px) {
-            .vt-fixed-cta { display: none; }
+
+        /* ===== AVISOS ===== */
+        .aviso-caixa {
+            font-size: 13px;
+            border-radius: 12px;
+            padding: 12px 16px;
+            line-height: 1.5;
+            margin-bottom: 16px;
+            display: none;
         }
+        #pub-horarios-ocupados {
+            color: var(--text-muted);
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        #pub-aviso-conflito {
+            color: #fca5a5;
+            background: rgba(248, 113, 113, 0.1);
+            border: 1px solid rgba(248, 113, 113, 0.2);
+        }
+
+        /* ===== BOTÃO ===== */
+        .btn-glow {
+            display: inline-block;
+            background: linear-gradient(135deg, #c471ed, #f64f59);
+            color: white;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 15px;
+            padding: 16px 32px;
+            border-radius: 50px;
+            text-align: center;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 10px 20px rgba(246, 79, 89, 0.3);
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .btn-glow:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 25px rgba(246, 79, 89, 0.5);
+        }
+        
+        /* Botão Voltar */
+        .btn-voltar {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+        .btn-voltar:hover { color: var(--primary); }
     </style>
 </head>
 <body>
 
-    <div class="vt-hero fade-in" id="vt-hero">
-        <div class="vt-hero-conteudo">
-            <h2 class="text-gradient" style="font-family: var(--font-display); font-size: 14px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px;" id="vt-selo">Cássia Nunes</h2>
-            <h1 id="vt-titulo">Beleza, cuidado <br> e autoestima em um só lugar</h1>
-            <p id="vt-subtitulo">Confira nossos serviços e agende seu horário em poucos segundos.</p>
-            <a href="agendar.html" class="btn-glow vt-cta">📅 AGENDAR MEU HORÁRIO</a>
+    <div class="agendar-container animate-up">
+        <div class="form-header">
+            <span class="selo-marca">Reserva Online</span>
+            <h2>Agendar Horário</h2>
+            <p>Preencha os dados abaixo para garantir seu momento.</p>
+        </div>
+        
+        <div>
+            <div class="form-group">
+                <label class="label-small">Seu Nome Completo</label>
+                <input type="text" id="pub-nome" class="modern-input" placeholder="Ex: Maria Silva">
+            </div>
+            
+            <div class="form-group">
+                <label class="label-small">Seu WhatsApp</label>
+                <input type="text" id="pub-tel" class="modern-input" placeholder="(83) 99999-9999">
+            </div>
+
+            <div class="form-group">
+                <label class="label-small">Profissional Preferida</label>
+                <select id="pub-profissional" class="modern-input">
+                    <option value="">Qualquer profissional disponível</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="label-small">Escolha o Serviço</label>
+                <select id="pub-servico" class="modern-input">
+                    <option value="">Carregando serviços...</option>
+                </select>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="label-small">Data Desejada</label>
+                    <input type="date" id="pub-data" class="modern-input">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="label-small">Horário</label>
+                    <input type="time" id="pub-hora" class="modern-input">
+                </div>
+            </div>
+
+            <div id="pub-horarios-ocupados" class="aviso-caixa"></div>
+            <div id="pub-aviso-conflito" class="aviso-caixa">
+                ⚠️ Esse horário já está ocupado com essa profissional. Escolha outro, por favor.
+            </div>
+
+            <button onclick="salvarAgendamentoPublico()" class="btn-glow">CONFIRMAR AGENDAMENTO</button>
+            
+            <a href="index.html" class="btn-voltar">← Voltar para a vitrine</a>
         </div>
     </div>
 
-    <div class="vt-section">
-        <h2 class="vt-section-titulo">⭐ Destaques</h2>
-        <div id="vt-lista-destaques" class="vt-menu-grid"></div>
-    </div>
-
-    <div class="vt-section">
-        <h2 class="vt-section-titulo">💅 Cardápio de Serviços</h2>
-        <div id="vt-lista-servicos" class="vt-menu-grid">
-            <div class="glass-panel vt-item"><span style="color:var(--text-muted); font-weight:400;">Carregando serviços...</span></div>
-        </div>
-    </div>
-
-    <div class="vt-section">
-        <div class="glass-panel vt-contato">
-            <h2 style="margin-bottom:0;">📍 Onde estamos</h2>
-            <a id="vt-endereco-link" href="#" target="_blank">
-                <span id="vt-endereco-texto">Endereço não configurado ainda</span>
-            </a>
-            <a id="vt-whatsapp-link" href="#" target="_blank">
-                <span>📱 Falar no WhatsApp</span>
-            </a>
-            <a id="vt-instagram-link" href="#" target="_blank" style="display:none;">
-                <span>📷 Nosso Instagram</span>
-            </a>
-        </div>
-    </div>
-
-    <div class="vt-footer">
-        Cássia Nunes Hair &copy; <span id="vt-ano"></span>
-    </div>
-
-    <a href="agendar.html" class="btn-glow vt-fixed-cta" style="text-align:center; display:block;">📅 Agendar Agora</a>
-
-    <!-- Firebase -->
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
+    
     <script>
-        document.getElementById("vt-ano").innerText = new Date().getFullYear();
-
+        // Configuração Oficial
         const firebaseConfig = {
             apiKey: "AIzaSyCpNsnwOVDLSZfXn-g6SE1V69BXHs8cYEc",
             authDomain: "mainhasite.firebaseapp.com",
@@ -232,89 +265,156 @@
             messagingSenderId: "11190400668",
             appId: "1:11190400668:web:b59e8c134fbaee3e121f59"
         };
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
         const db = firebase.database();
 
-        // ===== Carrega a configuração da vitrine (título, contato, capa) =====
-        db.ref('landingConfig').once('value').then(snap => {
-            const cfg = snap.val() || {};
-
-            if(cfg.titulo) {
-                document.getElementById("vt-titulo").innerHTML = cfg.titulo;
-                document.title = cfg.titulo + " | Salão de Beleza";
-            }
-            if(cfg.subtitulo) document.getElementById("vt-subtitulo").innerText = cfg.subtitulo;
-
-            if(cfg.capa) {
-                const hero = document.getElementById("vt-hero");
-                hero.classList.add("tem-capa");
-                const img = document.createElement("img");
-                img.src = cfg.capa;
-                img.className = "vt-hero-capa";
-                hero.prepend(img);
-            }
-
-            const whatsapp = cfg.whatsapp || "";
-            const linkWhats = document.getElementById("vt-whatsapp-link");
-            if(whatsapp) {
-                linkWhats.href = `https://wa.me/55${whatsapp}?text=${encodeURIComponent("Olá! Vim pelo site e gostaria de agendar um horário 💅")}`;
-            } else {
-                linkWhats.style.display = "none";
-            }
-
-            if(cfg.endereco) document.getElementById("vt-endereco-texto").innerText = cfg.endereco;
-            document.getElementById("vt-endereco-link").href = cfg.googleMapsUrl || "#";
-
-            if(cfg.instagram) {
-                const linkInsta = document.getElementById("vt-instagram-link");
-                linkInsta.href = cfg.instagram;
-                linkInsta.style.display = "flex";
-            }
-        }).catch(err => console.error("Erro ao carregar configuração da vitrine:", err));
-
-        // ===== Carrega os serviços (cardápio) =====
-        db.ref('servicos').on('value', snap => {
+        // 1. Carrega os Serviços do Banco de Dados
+        db.ref('servicos').once('value').then(snap => {
             const servicosObj = snap.val() ? snap.val() : {};
             let servicos = Object.values(servicosObj);
-
-            const divTodos = document.getElementById("vt-lista-servicos");
-            const divDestaques = document.getElementById("vt-lista-destaques");
-            const secDestaques = divDestaques.closest('.vt-section');
-
-            if(servicos.length === 0) {
-                divTodos.innerHTML = `<div class="glass-panel vt-item"><span style="color:var(--text-muted); font-weight:400;">Em breve, novidades!</span></div>`;
-                secDestaques.style.display = "none";
+            
+            const sel = document.getElementById("pub-servico");
+            if (servicos.length === 0) {
+                sel.innerHTML = '<option value="">Nenhum serviço cadastrado</option>';
                 return;
             }
 
             servicos.sort((a, b) => a.nome.localeCompare(b.nome));
+            sel.innerHTML = '<option value="">Selecione o serviço...</option>' + 
+                servicos.map(s => `<option value="${s.nome}" data-preco="${s.preco}">${s.nome} - R$ ${parseFloat(s.preco).toFixed(2)}</option>`).join('');
+        }).catch(err => console.error("Erro ao carregar serviços:", err));
 
-            const renderItem = (s) => `
-                <div class="glass-panel vt-item ${s.destaque ? 'destaque' : ''}">
-                    ${s.foto
-                        ? `<img src="${s.foto}" class="vt-item-foto" alt="${s.nome}">`
-                        : `<div class="vt-item-foto-placeholder">💅</div>`
-                    }
-                    <div class="vt-item-info">
-                        ${s.destaque ? '<span class="vt-badge-destaque">⭐ DESTAQUE</span><br>' : ''}
-                        <div class="vt-item-nome-linha">
-                            <span class="vt-item-nome">${s.nome}</span>
-                            <span class="vt-item-preco">R$ ${parseFloat(s.preco).toFixed(2)}</span>
-                        </div>
-                        ${s.descricao ? `<div class="vt-item-desc">${s.descricao}</div>` : ''}
-                    </div>
-                </div>`;
+        // 2. Carrega as Profissionais do Banco de Dados
+        db.ref('profissionais').once('value').then(snap => {
+            const profsObj = snap.val() ? snap.val() : {};
+            let profissionais = Object.values(profsObj);
 
-            const destaques = servicos.filter(s => s.destaque);
-            if(destaques.length === 0) {
-                secDestaques.style.display = "none";
-            } else {
-                secDestaques.style.display = "block";
-                divDestaques.innerHTML = destaques.map(renderItem).join('');
+            const sel = document.getElementById("pub-profissional");
+            profissionais.sort((a, b) => a.nome.localeCompare(b.nome));
+            sel.innerHTML = '<option value="">Qualquer profissional disponível</option>' + 
+                profissionais.map(p => `<option value="${p.id}" data-nome="${p.nome}">${p.nome}</option>`).join('');
+        }).catch(err => console.error("Erro ao carregar profissionais:", err));
+
+        // ===== HORÁRIOS OCUPADOS =====
+        let horariosOcupadosCache = [];
+
+        function chaveHora(hora) { return hora.replace(':', '-'); }
+
+        function carregarHorariosOcupados() {
+            const data = document.getElementById("pub-data").value;
+            const profId = document.getElementById("pub-profissional").value;
+            const divAviso = document.getElementById("pub-horarios-ocupados");
+            horariosOcupadosCache = [];
+
+            if(!data) {
+                divAviso.style.display = "none";
+                return;
             }
 
-            divTodos.innerHTML = servicos.map(renderItem).join('');
-        });
+            if(!profId) {
+                divAviso.style.display = "block";
+                divAviso.innerHTML = "ℹ️ <strong>Dica:</strong> Escolha uma profissional específica para vermos os horários já ocupados dela.";
+                return;
+            }
+
+            db.ref(`disponibilidade/${data}/${profId}`).once('value').then(snap => {
+                const ocupados = snap.val() ? Object.keys(snap.val()) : [];
+                horariosOcupadosCache = ocupados.map(h => h.replace('-', ':'));
+
+                if(horariosOcupadosCache.length === 0) {
+                    divAviso.style.display = "block";
+                    divAviso.innerHTML = "✅ <strong>Agenda livre!</strong> Nenhum horário ocupado neste dia com essa profissional.";
+                } else {
+                    divAviso.style.display = "block";
+                    divAviso.innerHTML = "🕐 <strong>Horários já ocupados:</strong><br>" + horariosOcupadosCache.sort().join(", ");
+                }
+                verificarConflitoHorario();
+            }).catch(err => {
+                console.error("Erro ao checar horários:", err);
+                divAviso.style.display = "none";
+            });
+        }
+
+        function verificarConflitoHorario() {
+            const hora = document.getElementById("pub-hora").value;
+            const avisoConflito = document.getElementById("pub-aviso-conflito");
+            const temConflito = hora && horariosOcupadosCache.includes(hora);
+            avisoConflito.style.display = temConflito ? "block" : "none";
+            return temConflito;
+        }
+
+        document.getElementById("pub-data").addEventListener("change", carregarHorariosOcupados);
+        document.getElementById("pub-profissional").addEventListener("change", carregarHorariosOcupados);
+        document.getElementById("pub-hora").addEventListener("change", verificarConflitoHorario);
+
+        // 3. Salva o Agendamento
+        function salvarAgendamentoPublico() {
+            const nome = document.getElementById("pub-nome").value.trim();
+            const tel = document.getElementById("pub-tel").value.trim();
+            
+            const servicoSelect = document.getElementById("pub-servico");
+            const servicoNome = servicoSelect.value;
+            const precoServico = parseFloat(servicoSelect.options[servicoSelect.selectedIndex]?.getAttribute('data-preco')) || 0;
+
+            const profSelect = document.getElementById("pub-profissional");
+            const profId = profSelect.value;
+            const profNome = profSelect.options[profSelect.selectedIndex]?.getAttribute('data-nome') || "Geral";
+
+            const data = document.getElementById("pub-data").value;
+            const hora = document.getElementById("pub-hora").value;
+
+            if(!nome || !tel || !servicoNome || !data || !hora) {
+                alert("Por favor, preencha todos os campos obrigatórios!");
+                return;
+            }
+
+            if(profId && verificarConflitoHorario()) {
+                alert("⚠️ Esse horário já está ocupado com essa profissional. Por favor, escolha outro.");
+                return;
+            }
+
+            const id = Date.now();
+            const novoAtendimento = {
+                id: id,
+                data: data,
+                hora: hora,
+                timestamp: Date.now(),
+                nomeCliente: nome,
+                telefoneCliente: tel,
+                profissionalId: profId || null,
+                nomeProfissional: profNome,
+                status: "Confirmado",
+                servicos: [{ id: Date.now(), nome: servicoNome, preco: precoServico, tipo: 'servico' }],
+                total: precoServico,
+                pagamento: "Pendente",
+                obs: "Agendado via Link Público"
+            };
+
+            const btn = document.querySelector(".btn-glow");
+            btn.innerText = "AGENDANDO...";
+            btn.style.opacity = "0.7";
+            btn.style.pointerEvents = "none";
+
+            db.ref(`atendimentos/${id}`).set(novoAtendimento)
+                .then(() => {
+                    if(profId) {
+                        db.ref(`disponibilidade/${data}/${profId}/${chaveHora(hora)}`).set(true)
+                            .catch(err => console.error("Erro ao registrar disponibilidade:", err));
+                    }
+                    alert("🎉 Agendamento realizado com sucesso! Aguardamos sua visita.");
+                    window.location.href = "index.html"; // Redireciona de volta pra vitrine
+                })
+                .catch(err => {
+                    alert("Erro ao realizar o agendamento. Tente novamente.");
+                    console.error(err);
+                    btn.innerText = "CONFIRMAR AGENDAMENTO";
+                    btn.style.opacity = "1";
+                    btn.style.pointerEvents = "auto";
+                });
+        }
     </script>
 </body>
 </html>
