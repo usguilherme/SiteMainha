@@ -138,7 +138,7 @@
             font-family: var(--font-display);
             font-size: 28px;
             font-weight: 700;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             text-align: center;
             display: flex;
             align-items: center;
@@ -146,7 +146,38 @@
             gap: 10px;
         }
 
-        /* ===== GRID DE CARDS (O Novo Cardápio) ===== */
+        /* ===== FILTROS (NOVO) ===== */
+        .vt-filters {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .vt-filter-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-muted);
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-family: var(--font-display);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .vt-filter-btn:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+        .vt-filter-btn.active {
+            background: var(--primary);
+            color: #000;
+            border-color: var(--primary);
+            box-shadow: 0 4px 15px rgba(229, 169, 169, 0.3);
+        }
+
+        /* ===== GRID DE CARDS ===== */
         .vt-menu-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -236,7 +267,6 @@
             border-top: 1px solid rgba(255,255,255,0.05);
         }
         
-        /* Ajustado para o selo de avaliação */
         .vt-card-preco {
             font-family: var(--font-display);
             font-size: 14px;
@@ -346,9 +376,17 @@
     <!-- TODOS OS SERVIÇOS -->
     <section class="vt-section animate-up" style="animation-delay: 0.3s;">
         <h2 class="vt-section-titulo">💅 Nossos Serviços</h2>
+        
+        <!-- BOTÕES DE FILTRO -->
+        <div class="vt-filters">
+            <button class="vt-filter-btn active" onclick="filtrarVitrine('todos', this)">✨ Todos</button>
+            <button class="vt-filter-btn" onclick="filtrarVitrine('cabelo', this)">💇‍♀️ Cabelo</button>
+            <button class="vt-filter-btn" onclick="filtrarVitrine('manicure', this)">💅 Manicure</button>
+        </div>
+
         <div id="vt-lista-servicos" class="vt-menu-grid">
-            <!-- Loading de Luxo -->
-            <div class="vt-card" style="align-items:center; padding: 40px; color: var(--text-muted);">
+            <!-- Loading -->
+            <div class="vt-card" style="align-items:center; padding: 40px; color: var(--text-muted); grid-column: 1 / -1;">
                 <i>Carregando o cardápio de beleza...</i>
             </div>
         </div>
@@ -384,7 +422,7 @@
     <!-- Botão Flutuante Mobile -->
     <a href="agendar.html" class="btn-glow vt-fixed-cta">📅 AGENDAR AGORA</a>
 
-    <!-- Firebase SDK (Mesma lógica mantida intacta) -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
@@ -404,7 +442,7 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // ===== CONFIGURAÇÕES DA VITRINE (TÍTULO, CAPA, LINKS) =====
+        // Carrega Configurações (Vitrine)
         db.ref('landingConfig').once('value').then(snap => {
             const cfg = snap.val() || {};
 
@@ -441,60 +479,114 @@
             }
         }).catch(err => console.error("Erro config vitrine:", err));
 
-        // ===== CARREGAMENTO DE SERVIÇOS E GERAÇÃO DOS CARDS =====
+        // Variável global para armazenar serviços para o filtro funcionar rápido
+        let servicosGlobais = [];
+
+        // ===== CARREGAMENTO DE SERVIÇOS =====
         db.ref('servicos').on('value', snap => {
             const servicosObj = snap.val() ? snap.val() : {};
-            let servicos = Object.values(servicosObj);
+            servicosGlobais = Object.values(servicosObj);
 
-            const divTodos = document.getElementById("vt-lista-servicos");
-            const divDestaques = document.getElementById("vt-lista-destaques");
-            const secDestaques = divDestaques.closest('.vt-section');
-
-            if(servicos.length === 0) {
-                divTodos.innerHTML = `<div class="vt-card" style="padding: 30px; text-align:center;">Em breve, novidades no nosso cardápio!</div>`;
-                secDestaques.style.display = "none";
+            if(servicosGlobais.length === 0) {
+                document.getElementById("vt-lista-servicos").innerHTML = `<div class="vt-card" style="padding: 30px; text-align:center; grid-column: 1 / -1;">Em breve, novidades no nosso cardápio!</div>`;
+                document.getElementById("vt-lista-destaques").closest('.vt-section').style.display = "none";
                 return;
             }
 
             // Ordena alfabeticamente
-            servicos.sort((a, b) => a.nome.localeCompare(b.nome));
+            servicosGlobais.sort((a, b) => a.nome.localeCompare(b.nome));
 
-            // Função que desenha o HTML de um Card Supremo
-            const renderCard = (s) => {
-                
-                return `
-                <div class="vt-card ${s.destaque ? 'destaque' : ''}">
-                    <div class="vt-card-img-wrapper">
-                        ${s.foto 
-                            ? `<img src="${s.foto}" class="vt-card-foto" alt="${s.nome}" loading="lazy">` 
-                            : `<div class="vt-card-placeholder">✨</div>`
-                        }
-                        ${s.destaque ? '<div class="vt-badge">★ DESTAQUE</div>' : ''}
-                    </div>
-                    <div class="vt-card-body">
-                        <h3 class="vt-card-nome">${s.nome}</h3>
-                        ${s.descricao ? `<p class="vt-card-desc">${s.descricao}</p>` : '<p class="vt-card-desc"></p>'}
-                        <div class="vt-card-footer">
-                            <span class="vt-card-preco">🔍 Sob avaliação</span>
-                            <a href="agendar.html" class="vt-btn-mini">Agendar</a>
-                        </div>
-                    </div>
-                </div>`;
-            };
-
-            // Separa os serviços em Destaques e Normais
-            const destaques = servicos.filter(s => s.destaque);
-            
+            // Renderiza Destaques Fixos
+            const destaques = servicosGlobais.filter(s => s.destaque);
+            const secDestaques = document.getElementById("vt-lista-destaques").closest('.vt-section');
             if(destaques.length === 0) {
                 secDestaques.style.display = "none";
             } else {
                 secDestaques.style.display = "block";
-                divDestaques.innerHTML = destaques.map(renderCard).join('');
+                document.getElementById("vt-lista-destaques").innerHTML = destaques.map(renderCard).join('');
             }
 
-            // A lista "Nossos Serviços" mostra todos
-            divTodos.innerHTML = servicos.map(renderCard).join('');
+            // Descobre qual botão de filtro está ativo no momento para manter a tela certa
+            let filtroAtual = 'todos';
+            const btnAtivo = document.querySelector('.vt-filter-btn.active');
+            if(btnAtivo) {
+                if(btnAtivo.innerText.includes('Cabelo')) filtroAtual = 'cabelo';
+                else if(btnAtivo.innerText.includes('Manicure')) filtroAtual = 'manicure';
+            }
+
+            renderizarVitrine(filtroAtual);
         });
+
+        // ===== FUNÇÃO DE RENDERIZAR CARD INDIVIDUAL =====
+        function renderCard(s) {
+            // Descobre se é unha ou cabelo lendo do banco ou usando as palavras-chave (fallback)
+            let isManicure = false;
+            if (s.categoria) {
+                isManicure = (s.categoria === 'manicure');
+            } else {
+                const palavrasManicure = ['manicure', 'pé', 'esmalta', 'unha', 'pedicure', 'gel'];
+                isManicure = palavrasManicure.some(palavra => s.nome.toLowerCase().includes(palavra));
+            }
+
+            // Se for unha e tiver preço, formata pra Reais. Se for cabelo, fica "Sob avaliação"
+            let textoPreco = "🔍 Sob avaliação";
+            if (isManicure && s.preco) {
+                textoPreco = parseFloat(s.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            }
+
+            return `
+            <div class="vt-card ${s.destaque ? 'destaque' : ''}">
+                <div class="vt-card-img-wrapper">
+                    ${s.foto 
+                        ? `<img src="${s.foto}" class="vt-card-foto" alt="${s.nome}" loading="lazy">` 
+                        : `<div class="vt-card-placeholder">✨</div>`
+                    }
+                    ${s.destaque ? '<div class="vt-badge">★ DESTAQUE</div>' : ''}
+                </div>
+                <div class="vt-card-body">
+                    <h3 class="vt-card-nome">${s.nome}</h3>
+                    ${s.descricao ? `<p class="vt-card-desc">${s.descricao}</p>` : '<p class="vt-card-desc"></p>'}
+                    <div class="vt-card-footer">
+                        <span class="vt-card-preco" style="font-weight: ${isManicure ? '800' : '500'}; color: ${isManicure ? 'var(--primary)' : 'var(--text-muted)'};">${textoPreco}</span>
+                        <a href="agendar.html" class="vt-btn-mini">Agendar</a>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        // ===== FUNÇÕES DE FILTRAR =====
+        window.filtrarVitrine = function(filtro, btnElement) {
+            // Troca a cor do botão ativo
+            document.querySelectorAll('.vt-filter-btn').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+
+            renderizarVitrine(filtro);
+        };
+
+        function renderizarVitrine(filtro) {
+            const divTodos = document.getElementById("vt-lista-servicos");
+
+            const filtrados = servicosGlobais.filter(s => {
+                let isManicure = false;
+                if (s.categoria) {
+                    isManicure = (s.categoria === 'manicure');
+                } else {
+                    const palavrasManicure = ['manicure', 'pé', 'esmalta', 'unha', 'pedicure', 'gel'];
+                    isManicure = palavrasManicure.some(palavra => s.nome.toLowerCase().includes(palavra));
+                }
+
+                if (filtro === 'todos') return true;
+                if (filtro === 'manicure') return isManicure;
+                if (filtro === 'cabelo') return !isManicure;
+                return true;
+            });
+
+            if(filtrados.length === 0) {
+                divTodos.innerHTML = `<div class="vt-card" style="padding: 30px; text-align:center; grid-column: 1 / -1; width: 100%;">Nenhum serviço encontrado nesta categoria.</div>`;
+            } else {
+                divTodos.innerHTML = filtrados.map(renderCard).join('');
+            }
+        }
     </script>
 </body>
 </html>
