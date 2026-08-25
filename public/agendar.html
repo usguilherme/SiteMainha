@@ -127,6 +127,12 @@
             background-color: var(--bg-dark);
             color: white;
         }
+        select.modern-input optgroup {
+            background-color: #1e1a2b;
+            color: var(--primary);
+            font-weight: bold;
+            font-family: var(--font-display);
+        }
 
         .grid-2 {
             display: grid;
@@ -200,7 +206,7 @@
         <div class="form-header">
             <span class="selo-marca">Reserva Online</span>
             <h2>Agendar Horário</h2>
-            <p>Preencha os dados abaixo para garantir seu momento.</p>
+            <p>Preencha os dados e fale conosco pelo WhatsApp para avaliarmos seu serviço.</p>
         </div>
         
         <div>
@@ -244,7 +250,7 @@
                 ⚠️ Esse horário já está ocupado com essa profissional. Escolha outro, por favor.
             </div>
 
-            <button onclick="salvarAgendamentoPublico()" class="btn-glow">CONFIRMAR AGENDAMENTO</button>
+            <button onclick="salvarAgendamentoPublico()" class="btn-glow">AGENDAR E IR PARA WHATSAPP</button>
             
             <a href="index.html" class="btn-voltar">← Voltar para a vitrine</a>
         </div>
@@ -266,25 +272,26 @@
             appId: "1:11190400668:web:b59e8c134fbaee3e121f59"
         };
         
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+
+        // ========================================================
+        // CONFIGURAÇÃO DE EQUIPE (EDITAR AQUI)
+        // Coloque abaixo os nomes das profissionais que SÃO MANICURES.
+        // O sistema usará isso para filtrar os serviços automaticamente.
+        // ========================================================
+        const nomesDasManicures = ["Thay"]; // Ex: ["Thay", "Joana", "Maria"]
+
+        // Variável global para guardar os serviços lidos do banco
+        let todosServicosGlobais = [];
 
         // 1. Carrega os Serviços do Banco de Dados
         db.ref('servicos').once('value').then(snap => {
             const servicosObj = snap.val() ? snap.val() : {};
-            let servicos = Object.values(servicosObj);
+            todosServicosGlobais = Object.values(servicosObj).sort((a, b) => a.nome.localeCompare(b.nome));
             
-            const sel = document.getElementById("pub-servico");
-            if (servicos.length === 0) {
-                sel.innerHTML = '<option value="">Nenhum serviço cadastrado</option>';
-                return;
-            }
-
-            servicos.sort((a, b) => a.nome.localeCompare(b.nome));
-            sel.innerHTML = '<option value="">Selecione o serviço...</option>' + 
-                servicos.map(s => `<option value="${s.nome}" data-preco="${s.preco}">${s.nome} - R$ ${parseFloat(s.preco).toFixed(2)}</option>`).join('');
+            // Desenha a lista inicial (mostrando todos)
+            renderizarServicos("todos");
         }).catch(err => console.error("Erro ao carregar serviços:", err));
 
         // 2. Carrega as Profissionais do Banco de Dados
@@ -294,13 +301,81 @@
 
             const sel = document.getElementById("pub-profissional");
             profissionais.sort((a, b) => a.nome.localeCompare(b.nome));
+            
+            // O data-cargo tenta prever se futuramente houver esse campo no banco
             sel.innerHTML = '<option value="">Qualquer profissional disponível</option>' + 
-                profissionais.map(p => `<option value="${p.id}" data-nome="${p.nome}">${p.nome}</option>`).join('');
+                profissionais.map(p => `<option value="${p.id}" data-nome="${p.nome}" data-cargo="${p.cargo || ''}">${p.nome}</option>`).join('');
         }).catch(err => console.error("Erro ao carregar profissionais:", err));
 
-        // ===== HORÁRIOS OCUPADOS =====
-        let horariosOcupadosCache = [];
 
+        // ===== FUNÇÃO QUE MONTA A CAIXA DE SERVIÇOS (COM FILTRO) =====
+        function renderizarServicos(tipoProfissional) {
+            const sel = document.getElementById("pub-servico");
+            
+            if (todosServicosGlobais.length === 0) {
+                sel.innerHTML = '<option value="">Nenhum serviço cadastrado</option>';
+                return;
+            }
+
+            // Palavras-chave que identificam que o serviço é da Manicure
+            const palavrasManicure = ['manicure', 'pé', 'esmalta', 'unha', 'pedicure', 'gel'];
+
+            let htmlBase = '<option value="">Selecione o serviço...</option>';
+            let htmlCabelo = '<optgroup label="💇‍♀️ Cabelo (Valor sob avaliação)">';
+            let htmlUnhas = '<optgroup label="💅 Unhas (Valor Fixo)">';
+            
+            let temCabelo = false;
+            let temUnhas = false;
+
+            todosServicosGlobais.forEach(s => {
+                const nomeMinusculo = s.nome.toLowerCase();
+                const isManicure = palavrasManicure.some(palavra => nomeMinusculo.includes(palavra));
+
+                // Se for unha E (estamos mostrando todos OU a profissional é manicure)
+                if (isManicure && (tipoProfissional === "todos" || tipoProfissional === "manicure")) {
+                    htmlUnhas += `<option value="${s.nome}" data-preco="${s.preco}" data-is-manicure="true">${s.nome} - R$ ${parseFloat(s.preco).toFixed(2)}</option>`;
+                    temUnhas = true;
+                } 
+                // Se for cabelo E (estamos mostrando todos OU a profissional é do cabelo)
+                else if (!isManicure && (tipoProfissional === "todos" || tipoProfissional === "cabelo")) {
+                    htmlCabelo += `<option value="${s.nome}" data-preco="${s.preco}" data-is-manicure="false">${s.nome} - Valor sob avaliação</option>`;
+                    temCabelo = true;
+                }
+            });
+
+            htmlCabelo += '</optgroup>';
+            htmlUnhas += '</optgroup>';
+
+            // Junta tudo baseado no que foi selecionado
+            if (temCabelo) htmlBase += htmlCabelo;
+            if (temUnhas) htmlBase += htmlUnhas;
+
+            sel.innerHTML = htmlBase;
+        }
+
+        // ===== LÓGICA DE DETECTAR QUEM FOI SELECIONADA =====
+        function filtrarServicosPorProfissional() {
+            const selectProf = document.getElementById("pub-profissional");
+            const nomeProfissional = selectProf.options[selectProf.selectedIndex]?.getAttribute('data-nome') || "";
+            const cargo = selectProf.options[selectProf.selectedIndex]?.getAttribute('data-cargo') || "";
+
+            let tipo = "todos";
+            
+            if (nomeProfissional !== "") {
+                // Checa se o cargo é Manicure (caso o banco tenha isso no futuro)
+                // OU se o nome da profissional está dentro daquela lista que você configurou lá no topo
+                const isManicure = cargo.toLowerCase().includes("manicure") || 
+                                   nomesDasManicures.some(nomeConfig => nomeProfissional.toLowerCase().includes(nomeConfig.toLowerCase()));
+                
+                tipo = isManicure ? "manicure" : "cabelo";
+            }
+            
+            renderizarServicos(tipo);
+        }
+
+
+        // ===== EVENTOS DE MUDANÇA NA TELA =====
+        let horariosOcupadosCache = [];
         function chaveHora(hora) { return hora.replace(':', '-'); }
 
         function carregarHorariosOcupados() {
@@ -310,8 +385,7 @@
             horariosOcupadosCache = [];
 
             if(!data) {
-                divAviso.style.display = "none";
-                return;
+                divAviso.style.display = "none"; return;
             }
 
             if(!profId) {
@@ -346,18 +420,26 @@
             return temConflito;
         }
 
+        // Quando o cliente escolhe a profissional, filtra os serviços e checa horários
+        document.getElementById("pub-profissional").addEventListener("change", () => {
+            carregarHorariosOcupados();
+            filtrarServicosPorProfissional();
+        });
+        
         document.getElementById("pub-data").addEventListener("change", carregarHorariosOcupados);
-        document.getElementById("pub-profissional").addEventListener("change", carregarHorariosOcupados);
         document.getElementById("pub-hora").addEventListener("change", verificarConflitoHorario);
 
-        // 3. Salva o Agendamento
+        // ===== SALVAR E IR PARA O WHATSAPP =====
         function salvarAgendamentoPublico() {
             const nome = document.getElementById("pub-nome").value.trim();
             const tel = document.getElementById("pub-tel").value.trim();
             
             const servicoSelect = document.getElementById("pub-servico");
+            const opcaoSelecionada = servicoSelect.options[servicoSelect.selectedIndex];
+            
             const servicoNome = servicoSelect.value;
-            const precoServico = parseFloat(servicoSelect.options[servicoSelect.selectedIndex]?.getAttribute('data-preco')) || 0;
+            const precoServico = parseFloat(opcaoSelecionada?.getAttribute('data-preco')) || 0;
+            const isManicure = opcaoSelecionada?.getAttribute('data-is-manicure') === 'true';
 
             const profSelect = document.getElementById("pub-profissional");
             const profId = profSelect.value;
@@ -390,11 +472,11 @@
                 servicos: [{ id: Date.now(), nome: servicoNome, preco: precoServico, tipo: 'servico' }],
                 total: precoServico,
                 pagamento: "Pendente",
-                obs: "Agendado via Link Público"
+                obs: "Agendado via Link Público - Aguardando validação via WhatsApp"
             };
 
             const btn = document.querySelector(".btn-glow");
-            btn.innerText = "AGENDANDO...";
+            btn.innerText = "PROCESSANDO...";
             btn.style.opacity = "0.7";
             btn.style.pointerEvents = "none";
 
@@ -404,13 +486,31 @@
                         db.ref(`disponibilidade/${data}/${profId}/${chaveHora(hora)}`).set(true)
                             .catch(err => console.error("Erro ao registrar disponibilidade:", err));
                     }
-                    alert("🎉 Agendamento realizado com sucesso! Aguardamos sua visita.");
-                    window.location.href = "index.html"; // Redireciona de volta pra vitrine
+                    
+                    // Converte a data YYYY-MM-DD para DD/MM/YYYY para ficar bonito no WhatsApp
+                    const dataFormatada = data.split('-').reverse().join('/');
+
+                    // Puxa o WhatsApp cadastrado nas configurações
+                    db.ref('landingConfig/whatsapp').once('value').then(snap => {
+                        let numeroWhats = snap.val() || "83999999999";
+                        numeroWhats = numeroWhats.replace(/\D/g, ''); // Limpa formatação
+                        if(!numeroWhats.startsWith('55')) numeroWhats = '55' + numeroWhats;
+
+                        let msg = "";
+                        if (isManicure) {
+                            msg = `Olá! Meu nome é ${nome}.%0A%0AQuero confirmar meu agendamento:%0A💅 *Serviço:* ${servicoNome}%0A👩‍💼 *Profissional:* ${profNome}%0A📅 *Data:* ${dataFormatada}%0A⏰ *Horário:* ${hora}%0A💰 *Valor:* R$ ${precoServico.toFixed(2)}`;
+                        } else {
+                            msg = `Olá! Meu nome é ${nome}.%0A%0AQuero confirmar meu agendamento e fazer um orçamento:%0A💇‍♀️ *Serviço:* ${servicoNome}%0A👩‍💼 *Profissional:* ${profNome}%0A📅 *Data:* ${dataFormatada}%0A⏰ *Horário:* ${hora}%0A%0APoderia me passar uma estimativa de valor baseada no meu cabelo?`;
+                        }
+
+                        alert("🎉 Horário reservado no sistema! Vamos te direcionar para o nosso WhatsApp para finalizar.");
+                        window.location.href = `https://wa.me/${numeroWhats}?text=${msg}`;
+                    });
                 })
                 .catch(err => {
                     alert("Erro ao realizar o agendamento. Tente novamente.");
                     console.error(err);
-                    btn.innerText = "CONFIRMAR AGENDAMENTO";
+                    btn.innerText = "AGENDAR E IR PARA WHATSAPP";
                     btn.style.opacity = "1";
                     btn.style.pointerEvents = "auto";
                 });

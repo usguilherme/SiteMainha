@@ -235,12 +235,18 @@
             padding-top: 16px;
             border-top: 1px solid rgba(255,255,255,0.05);
         }
+        
+        /* Ajustado para o selo de avaliação */
         .vt-card-preco {
             font-family: var(--font-display);
-            font-size: 22px;
-            font-weight: 800;
-            color: var(--primary);
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-muted);
+            background: rgba(255,255,255,0.05);
+            padding: 6px 12px;
+            border-radius: 8px;
         }
+
         .vt-btn-mini {
             background: rgba(255,255,255,0.05);
             color: white;
@@ -455,8 +461,6 @@
 
             // Função que desenha o HTML de um Card Supremo
             const renderCard = (s) => {
-                // Formatação do preço para moeda Brasileira (R$)
-                const precoFormatado = parseFloat(s.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 
                 return `
                 <div class="vt-card ${s.destaque ? 'destaque' : ''}">
@@ -471,7 +475,7 @@
                         <h3 class="vt-card-nome">${s.nome}</h3>
                         ${s.descricao ? `<p class="vt-card-desc">${s.descricao}</p>` : '<p class="vt-card-desc"></p>'}
                         <div class="vt-card-footer">
-                            <span class="vt-card-preco">${precoFormatado}</span>
+                            <span class="vt-card-preco">🔍 Sob avaliação</span>
                             <a href="agendar.html" class="vt-btn-mini">Agendar</a>
                         </div>
                     </div>
