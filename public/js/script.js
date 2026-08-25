@@ -1532,20 +1532,21 @@
     }
 
     function salvarServicoCad() {
-        const nome = document.getElementById("serv-nome").value;
-        const preco = document.getElementById("serv-preco").value;
-        
-        // 👇 NOVA LINHA: Pega a categoria escolhida (Cabelo ou Manicure)
+        const nome = document.getElementById("serv-nome").value.trim();
+        let preco = document.getElementById("serv-preco").value; // Mudou para 'let' para podermos alterar
         const categoria = document.getElementById("serv-categoria") ? document.getElementById("serv-categoria").value : "cabelo";
-        
         const descricao = document.getElementById("serv-descricao") ? document.getElementById("serv-descricao").value.trim() : "";
         const destaque = document.getElementById("serv-destaque") ? document.getElementById("serv-destaque").checked : false;
         const fotoInput = document.getElementById("serv-foto");
 
-        if(!nome || !preco) return dispararToast("Preencha nome e preço!", "error");
+        // 👇 NOVA VALIDAÇÃO INTELIGENTE
+        if(!nome) return dispararToast("Preencha o nome do serviço!", "error");
+        if(categoria === "manicure" && !preco) return dispararToast("Preencha o preço para os serviços de manicure!", "error");
+
+        // Se for cabelo e deixarem o preço vazio, salva como 0 para não quebrar o banco de dados
+        if(!preco) preco = 0;
 
         const salvar = (fotoBase64) => {
-            // 👇 CATEGORIA ADICIONADA: Agora ela vai junto no pacote de dados pro Firebase
             const dados = { nome, preco, categoria, descricao, destaque };
             
             if(fotoBase64) dados.foto = fotoBase64;
