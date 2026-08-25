@@ -1534,6 +1534,10 @@
     function salvarServicoCad() {
         const nome = document.getElementById("serv-nome").value;
         const preco = document.getElementById("serv-preco").value;
+        
+        // 👇 NOVA LINHA: Pega a categoria escolhida (Cabelo ou Manicure)
+        const categoria = document.getElementById("serv-categoria") ? document.getElementById("serv-categoria").value : "cabelo";
+        
         const descricao = document.getElementById("serv-descricao") ? document.getElementById("serv-descricao").value.trim() : "";
         const destaque = document.getElementById("serv-destaque") ? document.getElementById("serv-destaque").checked : false;
         const fotoInput = document.getElementById("serv-foto");
@@ -1541,7 +1545,9 @@
         if(!nome || !preco) return dispararToast("Preencha nome e preço!", "error");
 
         const salvar = (fotoBase64) => {
-            const dados = { nome, preco, descricao, destaque };
+            // 👇 CATEGORIA ADICIONADA: Agora ela vai junto no pacote de dados pro Firebase
+            const dados = { nome, preco, categoria, descricao, destaque };
+            
             if(fotoBase64) dados.foto = fotoBase64;
 
             if (idServicoEdicao) {
@@ -1586,6 +1592,12 @@
         if(!s) return;
         document.getElementById("serv-nome").value = s.nome;
         document.getElementById("serv-preco").value = s.preco;
+        
+        // 👇 AQUI! Preenche a categoria com o que tá no banco, ou joga "cabelo" se for um serviço antigo
+        if(document.getElementById("serv-categoria")) {
+            document.getElementById("serv-categoria").value = s.categoria || "cabelo";
+        }
+
         if(document.getElementById("serv-descricao")) document.getElementById("serv-descricao").value = s.descricao || "";
         if(document.getElementById("serv-destaque")) document.getElementById("serv-destaque").checked = !!s.destaque;
         const preview = document.getElementById("serv-foto-preview");
@@ -1601,6 +1613,12 @@
         idServicoEdicao = null;
         document.getElementById("serv-nome").value = "";
         document.getElementById("serv-preco").value = "";
+        
+        // 👇 AQUI! Limpa a caixinha devolvendo ela pro padrão ("cabelo")
+        if(document.getElementById("serv-categoria")) {
+            document.getElementById("serv-categoria").value = "cabelo";
+        }
+
         if(document.getElementById("serv-descricao")) document.getElementById("serv-descricao").value = "";
         if(document.getElementById("serv-destaque")) document.getElementById("serv-destaque").checked = false;
         if(document.getElementById("serv-foto")) document.getElementById("serv-foto").value = "";
@@ -1609,7 +1627,6 @@
         if(btn) { btn.innerText = "Salvar"; btn.style.background = ""; }
         document.getElementById("btn-cancelar-servico").style.display = "none";
     }
-
     // ==========================================
     // PROFISSIONAIS (CADASTRO E FILTROS)
     // ==========================================

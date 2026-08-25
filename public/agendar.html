@@ -278,9 +278,9 @@
         // ========================================================
         // CONFIGURAÇÃO DE EQUIPE (EDITAR AQUI)
         // Coloque abaixo os nomes das profissionais que SÃO MANICURES.
-        // O sistema usará isso para filtrar os serviços automaticamente.
+        // O sistema usará isso para saber quando limpar a lista de cabelos.
         // ========================================================
-        const nomesDasManicures = ["Thay"]; // Ex: ["Thay", "Joana", "Maria"]
+        const nomesDasManicures = ["Thay"]; // Ex: ["Thay", "Joana"]
 
         // Variável global para guardar os serviços lidos do banco
         let todosServicosGlobais = [];
@@ -290,7 +290,6 @@
             const servicosObj = snap.val() ? snap.val() : {};
             todosServicosGlobais = Object.values(servicosObj).sort((a, b) => a.nome.localeCompare(b.nome));
             
-            // Desenha a lista inicial (mostrando todos)
             renderizarServicos("todos");
         }).catch(err => console.error("Erro ao carregar serviços:", err));
 
@@ -302,7 +301,6 @@
             const sel = document.getElementById("pub-profissional");
             profissionais.sort((a, b) => a.nome.localeCompare(b.nome));
             
-            // O data-cargo tenta prever se futuramente houver esse campo no banco
             sel.innerHTML = '<option value="">Qualquer profissional disponível</option>' + 
                 profissionais.map(p => `<option value="${p.id}" data-nome="${p.nome}" data-cargo="${p.cargo || ''}">${p.nome}</option>`).join('');
         }).catch(err => console.error("Erro ao carregar profissionais:", err));
@@ -317,9 +315,6 @@
                 return;
             }
 
-            // Palavras-chave que identificam que o serviço é da Manicure
-            const palavrasManicure = ['manicure', 'pé', 'esmalta', 'unha', 'pedicure', 'gel'];
-
             let htmlBase = '<option value="">Selecione o serviço...</option>';
             let htmlCabelo = '<optgroup label="💇‍♀️ Cabelo (Valor sob avaliação)">';
             let htmlUnhas = '<optgroup label="💅 Unhas (Valor Fixo)">';
@@ -328,8 +323,14 @@
             let temUnhas = false;
 
             todosServicosGlobais.forEach(s => {
-                const nomeMinusculo = s.nome.toLowerCase();
-                const isManicure = palavrasManicure.some(palavra => nomeMinusculo.includes(palavra));
+                // Checa a categoria salva no banco. Se não existir (serviços antigos), usa o plano B.
+                let isManicure = false;
+                if (s.categoria) {
+                    isManicure = (s.categoria === 'manicure');
+                } else {
+                    const palavrasManicure = ['manicure', 'pé', 'esmalta', 'unha', 'pedicure', 'gel'];
+                    isManicure = palavrasManicure.some(palavra => s.nome.toLowerCase().includes(palavra));
+                }
 
                 // Se for unha E (estamos mostrando todos OU a profissional é manicure)
                 if (isManicure && (tipoProfissional === "todos" || tipoProfissional === "manicure")) {
@@ -346,7 +347,6 @@
             htmlCabelo += '</optgroup>';
             htmlUnhas += '</optgroup>';
 
-            // Junta tudo baseado no que foi selecionado
             if (temCabelo) htmlBase += htmlCabelo;
             if (temUnhas) htmlBase += htmlUnhas;
 
@@ -362,8 +362,6 @@
             let tipo = "todos";
             
             if (nomeProfissional !== "") {
-                // Checa se o cargo é Manicure (caso o banco tenha isso no futuro)
-                // OU se o nome da profissional está dentro daquela lista que você configurou lá no topo
                 const isManicure = cargo.toLowerCase().includes("manicure") || 
                                    nomesDasManicures.some(nomeConfig => nomeProfissional.toLowerCase().includes(nomeConfig.toLowerCase()));
                 
@@ -372,7 +370,6 @@
             
             renderizarServicos(tipo);
         }
-
 
         // ===== EVENTOS DE MUDANÇA NA TELA =====
         let horariosOcupadosCache = [];
@@ -420,7 +417,6 @@
             return temConflito;
         }
 
-        // Quando o cliente escolhe a profissional, filtra os serviços e checa horários
         document.getElementById("pub-profissional").addEventListener("change", () => {
             carregarHorariosOcupados();
             filtrarServicosPorProfissional();
@@ -487,13 +483,11 @@
                             .catch(err => console.error("Erro ao registrar disponibilidade:", err));
                     }
                     
-                    // Converte a data YYYY-MM-DD para DD/MM/YYYY para ficar bonito no WhatsApp
                     const dataFormatada = data.split('-').reverse().join('/');
 
-                    // Puxa o WhatsApp cadastrado nas configurações
                     db.ref('landingConfig/whatsapp').once('value').then(snap => {
                         let numeroWhats = snap.val() || "83999999999";
-                        numeroWhats = numeroWhats.replace(/\D/g, ''); // Limpa formatação
+                        numeroWhats = numeroWhats.replace(/\D/g, ''); 
                         if(!numeroWhats.startsWith('55')) numeroWhats = '55' + numeroWhats;
 
                         let msg = "";

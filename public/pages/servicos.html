@@ -1,7 +1,15 @@
 <div class="glass-panel form-inline">
     <input type="hidden" id="id-servico-edicao">
+    
     <div class="mobile-stack" style="display:flex; gap:10px; width:100%;">
         <input type="text" id="serv-nome" placeholder="Nome do Serviço" class="modern-input" style="flex:2;">
+        
+        <!-- Caixinha de Categoria -->
+        <select id="serv-categoria" class="modern-input" style="flex:1.2;">
+            <option value="cabelo">💇‍♀️ Cabelo</option>
+            <option value="manicure">💅 Manicure / Unhas</option>
+        </select>
+        
         <input type="number" id="serv-preco" placeholder="Valor (R$)" class="modern-input" style="flex:1;">
     </div>
 
@@ -25,5 +33,6 @@
         <button onclick="cancelarEdicaoServico()" id="btn-cancelar-servico" class="btn-danger full-width" style="display:none; margin-top:10px;">✕</button>
     </div>
 </div>
+
 <div id="lista-servicos-cad" class="grid-cards mt-15" style="margin-bottom: 80px;"></div>
 <button onclick="abrirAba('financeiro')" class="btn-small mt-15 mobile-only" style="width:100%; opacity:0.7; margin-bottom: 30px;">Voltar ao Menu</button>
